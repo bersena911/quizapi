@@ -2,7 +2,7 @@ from fastapi import Depends
 from fastapi.exceptions import HTTPException
 from fastapi.requests import Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from jose import jwt
+from jose import jwt, ExpiredSignatureError, JWTError
 
 from schemas.auth_schema import UserDetails
 from settings import app_config
@@ -14,8 +14,7 @@ authorization_header_scheme = HTTPBearer(auto_error=False)
 
 
 def decode_token(token: str) -> dict:
-    decoded_token = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-    return decoded_token
+    return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
 
 
 async def get_current_user(
@@ -33,7 +32,12 @@ async def get_current_user(
     """
     if not token:
         raise HTTPException(status_code=401, detail="Authorization Header Not Provided")
-    decoded_token = decode_token(token.credentials)
+    try:
+        decoded_token = decode_token(token.credentials)
+    except ExpiredSignatureError:
+        raise HTTPException(status_code=400, detail="Access Token Has Expired")
+    except JWTError:
+        raise HTTPException(status_code=500, detail="Invalid Token")
 
     user_details = UserDetails(**decoded_token)
     request.state.user_details = user_details
