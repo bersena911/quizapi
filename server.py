@@ -7,9 +7,7 @@ from routers import (
 
 
 def init_routers(app_):
-    for router in (
-        health,
-    ):
+    for router in (health,):
         app_.include_router(router.router, prefix="/api/v1")
 
 
@@ -19,7 +17,7 @@ def create_app():
         description="Quiz API",
         version="1.0.0",
         on_startup=[startup_event],
-        on_shutdown=[shutdown_event]
+        on_shutdown=[shutdown_event],
     )
     init_routers(app_)
     return app_
