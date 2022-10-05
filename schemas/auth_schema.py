@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, UUID4
 
 
 class RegisterSchema(BaseModel):
@@ -24,3 +24,20 @@ class LoginSchema(BaseModel):
 
         anystr_strip_whitespace = True
         min_anystr_length = 1
+
+
+class RegisterResponse(BaseModel):
+    user_id: UUID4
+
+
+class LoginResponse(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class UserDetails(BaseModel):
+    username: str
+    first_name: str
+    last_name: str
+    email: EmailStr
+    disabled: bool

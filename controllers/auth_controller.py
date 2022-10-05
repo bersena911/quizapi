@@ -6,7 +6,7 @@ from passlib.context import CryptContext
 from sqlalchemy.orm import sessionmaker
 
 from models.users import Users
-from schemas.auth_schema import RegisterSchema, LoginSchema
+from schemas.auth_schema import RegisterSchema, LoginSchema, UserDetails
 from services.db_service import db_service
 from settings import app_config
 
@@ -126,5 +126,8 @@ class AuthController:
             raise HTTPException(
                 status_code=401, detail="Incorrect username or password"
             )
-        access_token = self.create_access_token(data={"sub": user.username})
+        user_details = UserDetails(**user.__dict__).dict()
+        access_token = self.create_access_token(
+            data={"sub": user.username, **user_details}
+        )
         return {"access_token": access_token, "token_type": "Bearer"}
