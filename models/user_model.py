@@ -2,6 +2,7 @@ import uuid
 
 from sqlalchemy import Column, String, Boolean
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
 
 from services.db_service import Base
 
@@ -16,3 +17,4 @@ class User(Base):
     email = Column(String)
     password = Column(String)
     disabled = Column(Boolean)
+    quizzes = relationship("Quiz")

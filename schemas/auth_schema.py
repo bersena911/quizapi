@@ -36,6 +36,7 @@ class LoginResponse(BaseModel):
 
 
 class UserDetails(BaseModel):
+    id: UUID4
     username: str
     first_name: str
     last_name: str

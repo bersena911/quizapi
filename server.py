@@ -4,11 +4,12 @@ from helpers.app_helper import startup_event, shutdown_event
 from routers import (
     health_router,
     auth_router,
+    quiz_router,
 )
 
 
 def init_routers(app_):
-    for router in (health_router, auth_router):
+    for router in (health_router, auth_router, quiz_router):
         app_.include_router(router.router, prefix="/api/v1")
 
 

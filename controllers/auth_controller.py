@@ -32,6 +32,7 @@ class AuthController:
 
         """
         to_encode = data.copy()
+        to_encode["id"] = str(to_encode["id"])
         expire = datetime.utcnow() + timedelta(minutes=expire_minutes)
         to_encode.update({"exp": expire})
         encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
