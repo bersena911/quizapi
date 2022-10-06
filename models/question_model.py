@@ -15,4 +15,4 @@ class Question(Base):
     title = Column(String)
     type = Column(String)
     quiz_id = Column(UUID(as_uuid=True), ForeignKey("quizzes.id"))
-    answers = relationship("Answer", lazy=True)
+    answers = relationship("Answer", lazy=False)

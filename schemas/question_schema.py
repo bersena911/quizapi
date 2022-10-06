@@ -1,6 +1,6 @@
 from enum import Enum
 
-from pydantic import BaseModel, UUID4
+from pydantic import BaseModel, conlist
 
 from schemas.answers_schema import AnswerSchema
 
@@ -13,7 +13,7 @@ class QuestionTypeEnum(Enum):
 class QuestionSchema(BaseModel):
     title: str
     type: QuestionTypeEnum
-    answers: list[AnswerSchema]
+    answers: conlist(AnswerSchema, min_items=2)
 
     class Config:
         """Extra configuration options"""
@@ -23,5 +23,4 @@ class QuestionSchema(BaseModel):
 
 
 class QuestionsSchema(BaseModel):
-    quiz_id: UUID4
     questions: list[QuestionSchema]
