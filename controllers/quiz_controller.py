@@ -3,7 +3,7 @@ from pydantic import UUID4
 from sqlalchemy.orm import sessionmaker
 
 from models.quiz_model import Quiz
-from schemas.quiz_schema import QuizSchema, QuizDetails
+from schemas.quiz_schema import QuizSchema
 from services.db_service import db_service
 
 
@@ -26,5 +26,10 @@ class QuizController:
             )
             if not quiz:
                 raise HTTPException(status_code=404, detail="Quiz not found")
-            quiz_details = QuizDetails(**quiz.__dict__).dict()
+            quiz_details = quiz.__dict__
             return quiz_details
+
+    @staticmethod
+    def get_quizzes(user_id: UUID4) -> dict:
+        with sessionmaker(bind=db_service.engine)() as session:
+            return session.query(Quiz).filter(Quiz.user_id == user_id).all()

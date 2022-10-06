@@ -5,11 +5,12 @@ from routers import (
     health_router,
     auth_router,
     quiz_router,
+    question_router,
 )
 
 
 def init_routers(app_):
-    for router in (health_router, auth_router, quiz_router):
+    for router in (health_router, auth_router, quiz_router, question_router):
         app_.include_router(router.router, prefix="/api/v1")
 
 

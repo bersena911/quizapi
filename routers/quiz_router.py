@@ -11,7 +11,7 @@ from schemas.quiz_schema import (
 )
 from services.auth_service import get_current_active_user
 
-router = APIRouter(prefix="/quizzes", tags=["Quiz"])
+router = APIRouter(prefix="/quizzes", tags=["Quizzes"])
 
 
 @router.post("/", response_model=QuizCreateResponse)
@@ -22,6 +22,14 @@ def create_quiz(
     Create empty quiz
     """
     return QuizCreateResponse(**QuizController.create_quiz(quiz_data, current_user.id))
+
+
+@router.get("/")
+def get_user_quizzes(current_user: UserDetails = Depends(get_current_active_user)):
+    """
+    Create empty quiz
+    """
+    return QuizController.get_quizzes(current_user.id)
 
 
 @router.get("/{quiz_id}", response_model=QuizDetails)
