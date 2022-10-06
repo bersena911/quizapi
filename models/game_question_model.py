@@ -14,4 +14,4 @@ class GameQuestion(Base):
     answered = Column(Boolean)
     skipped = Column(Boolean)
     game_id = Column(UUID(as_uuid=True), ForeignKey("games.id"))
-    game_answers = relationship("GameAnswer")
+    game_answers = relationship("GameAnswer", lazy=False)

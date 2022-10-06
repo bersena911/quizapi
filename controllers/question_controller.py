@@ -40,3 +40,14 @@ class QuestionController:
                 )
                 session.add(question)
             session.commit()
+
+    @staticmethod
+    def paginate_questions(quiz_id: UUID4, offset: int) -> Question:
+        with sessionmaker(bind=db_service.engine)() as session:
+            return (
+                session.query(Question)
+                .filter(Question.quiz_id == quiz_id)
+                .limit(1)
+                .offset(offset)
+                .first()
+            )
