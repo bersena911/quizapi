@@ -5,7 +5,7 @@ from jose import jwt
 from passlib.context import CryptContext
 from sqlalchemy.orm import sessionmaker
 
-from models.users import Users
+from models.user_model import User
 from schemas.auth_schema import RegisterSchema, LoginSchema, UserDetails
 from services.db_service import db_service
 from settings import app_config
@@ -64,7 +64,7 @@ class AuthController:
         """
         return pwd_context.hash(password)
 
-    def check_user_access(self, user: Users, password: str):
+    def check_user_access(self, user: User, password: str):
         """
         Checks if found user matches given password
         Args:
@@ -92,7 +92,7 @@ class AuthController:
 
         """
         with sessionmaker(bind=db_service.engine)() as session:
-            user = Users(
+            user = User(
                 username=register_data.username,
                 first_name=register_data.first_name,
                 last_name=register_data.last_name,
@@ -117,9 +117,7 @@ class AuthController:
 
         with sessionmaker(bind=db_service.engine)() as session:
             user = (
-                session.query(Users)
-                .filter(Users.username == login_data.username)
-                .first()
+                session.query(User).filter(User.username == login_data.username).first()
             )
 
         if not self.check_user_access(user, login_data.password):
