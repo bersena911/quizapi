@@ -1,6 +1,7 @@
-from pydantic import BaseModel, UUID4
+from pydantic import BaseModel
 
 
 class AnswerSchema(BaseModel):
     choice: str
+    value: str
     is_correct: bool

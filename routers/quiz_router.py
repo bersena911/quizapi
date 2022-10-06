@@ -2,6 +2,7 @@ from fastapi import Depends
 from pydantic import UUID4
 
 from controllers.quiz_controller import QuizController
+from controllers.users_quiz_controller import UsersQuizController
 from routers import APIRouter
 from schemas.auth_schema import UserDetails
 from schemas.quiz_schema import (
@@ -37,3 +38,10 @@ def get_quiz_details(
     quiz_id: UUID4, current_user: UserDetails = Depends(get_current_active_user)
 ):
     return QuizDetails(**QuizController.get_quiz_details(quiz_id, current_user.id))
+
+
+@router.post("/{quiz_id}/start")
+def start_quiz(
+    quiz_id: UUID4, current_user: UserDetails = Depends(get_current_active_user)
+):
+    return UsersQuizController.start_quiz(quiz_id, current_user.id)

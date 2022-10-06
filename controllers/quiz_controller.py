@@ -18,11 +18,16 @@ class QuizController:
             return {"id": quiz.id}
 
     @staticmethod
-    def check_quiz_exists(quiz_id: UUID4, user_id: UUID4):
+    def check_quiz_exists_for_user(quiz_id: UUID4, user_id: UUID4):
         with sessionmaker(bind=db_service.engine)() as session:
             return session.query(
                 exists().where(Quiz.id == quiz_id and Quiz.user_id == user_id)
             ).scalar()
+
+    @staticmethod
+    def check_quiz_exists(quiz_id: UUID4):
+        with sessionmaker(bind=db_service.engine)() as session:
+            return session.query(exists().where(Quiz.id == quiz_id)).scalar()
 
     @staticmethod
     def get_quiz_details(quiz_id: UUID4, user_id: UUID4) -> dict:
