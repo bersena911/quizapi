@@ -8,10 +8,10 @@ from services.db_service import Base
 
 
 class GameQuestion(Base):
-    __tablename__ = "users_questions"
+    __tablename__ = "game_questions"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     answered = Column(Boolean)
     skipped = Column(Boolean)
-    users_quiz_id = Column(UUID(as_uuid=True), ForeignKey("users_quizzes.id"))
-    answers = relationship("GameAnswer")
+    game_id = Column(UUID(as_uuid=True), ForeignKey("games.id"))
+    game_answers = relationship("GameAnswer")
