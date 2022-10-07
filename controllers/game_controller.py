@@ -58,8 +58,12 @@ class GameController:
     def next_question(self, game_id: UUID4, user_id: UUID4):
         with sessionmaker(bind=db_service.engine)() as session:
             game = self.get_game(session, game_id, user_id)
+            if game.finished:
+                raise HTTPException(status_code=400, detail="Game is already finished")
             question = QuestionController.paginate_questions(game.quiz_id, game.offset)
             if not question:
+                game.finished = True
+                session.commit()
                 return
 
             game_question = (
