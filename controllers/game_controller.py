@@ -23,17 +23,29 @@ class GameController:
         if not QuizController.check_quiz_exists(game_body.quiz_id):
             raise HTTPException(status_code=404, detail="Quiz not found")
         with sessionmaker(bind=db_service.engine)() as session:
-            game = Game(
-                started=True,
-                finished=False,
-                score=0,
-                offset=0,
-                quiz_id=game_body.quiz_id,
-                user_id=user_id,
+            game = (
+                session.query(Game)
+                .filter(Game.quiz_id == game_body.quiz_id and Game.user_id == user_id)
+                .first()
             )
-            session.add(game)
-            session.commit()
-            return {"id": game.id}
+            if not game:
+                game = Game(
+                    started=True,
+                    finished=False,
+                    score=0,
+                    offset=0,
+                    quiz_id=game_body.quiz_id,
+                    user_id=user_id,
+                )
+                session.add(game)
+                session.commit()
+                return {"id": game.id}
+            elif game.finished:
+                raise HTTPException(
+                    status_code=400, detail="You already played this game"
+                )
+            else:
+                return {"id": game.id}
 
     @staticmethod
     def get_game(session, game_id: UUID4, user_id: UUID4) -> Game:
