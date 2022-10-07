@@ -163,6 +163,12 @@ class GameController:
             question = QuestionController.get_question(
                 session, game_question.question_id
             )
+            if question.type == QuestionTypeEnum.SINGLE_ANSWER.value:
+                if len(answer_data.choices) > 1:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"{question.type} does not support multiple answers",
+                    )
             score = self.calculate_answer_score(
                 answer_data.choices, question.answers, question.type
             )
@@ -184,3 +190,10 @@ class GameController:
             game_question.skipped = True
             game.offset += 1
             session.commit()
+
+    def get_results(self, game_id: UUID4, user_id: UUID4):
+        with sessionmaker(bind=db_service.engine)() as session:
+            game = self.get_game(session, game_id, user_id)
+            if not game.finished:
+                raise HTTPException(status_code=400, detail="Game is not finished yet")
+            return {"score": game.score}

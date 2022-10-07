@@ -54,5 +54,8 @@ def skip_question(
 
 
 @router.get("/{game_id}/results")
-def get_results():
-    pass
+def get_results(
+    game_id: UUID4,
+    current_user: UserDetails = Depends(get_current_active_user),
+):
+    return GameController().get_results(game_id, current_user.id)

@@ -1,3 +1,4 @@
+from fastapi import HTTPException
 from pydantic import UUID4
 from sqlalchemy.orm import sessionmaker
 
@@ -24,6 +25,11 @@ class QuestionController:
     ) -> None:
         with sessionmaker(bind=db_service.engine)() as session:
             quiz = QuizController.get_quiz_for_user(session, quiz_id, user_id)
+            if quiz.published:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Can't add questions to already published quiz",
+                )
             for question_data in questions_data.questions:
                 answers = []
                 for answer in question_data.answers:
