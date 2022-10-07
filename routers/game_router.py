@@ -11,6 +11,11 @@ from services.auth_service import get_current_active_user
 router = APIRouter(prefix="/games", tags=["Games"])
 
 
+@router.get("/")
+def get_user_games(current_user: UserDetails = Depends(get_current_active_user)):
+    return GameController.get_games(current_user.id)
+
+
 @router.post("/start")
 def start_game(
     game_body: GameStartSchema,
@@ -19,23 +24,31 @@ def start_game(
     return GameController.start_game(game_body, current_user.id)
 
 
-@router.post("/{game_id}/questions/next")
+@router.get("/{game_id}/questions/next")
 def next_question(
     game_id: UUID4,
     current_user: UserDetails = Depends(get_current_active_user),
 ):
-    return GameController.next_question(game_id, current_user.id)
+    return GameController().next_question(game_id, current_user.id)
 
 
-@router.post("/{game_id}/questions/{question_id}/submit")
+@router.post("/questions/{question_id}/submit", status_code=204)
 def answer_question(
-    game_id: UUID4,
     question_id: UUID4,
     answer_data: GameAnswerSchema,
+    current_user: UserDetails = Depends(get_current_active_user),
 ):
-    return GameController.answer_question(game_id, question_id, answer_data)
+    return GameController().answer_question(current_user.id, question_id, answer_data)
 
 
-@router.get("/{game_id}/questions/results")
+@router.post("/questions/{question_id}/skip", status_code=204)
+def skip_question(
+    question_id: UUID4,
+    current_user: UserDetails = Depends(get_current_active_user),
+):
+    return GameController().skip_question(current_user.id, question_id)
+
+
+@router.get("/{game_id}/results")
 def get_results():
     pass
