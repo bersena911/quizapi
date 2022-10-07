@@ -45,3 +45,15 @@ class QuizController:
     def get_quizzes(user_id: UUID4) -> dict:
         with sessionmaker(bind=db_service.engine)() as session:
             return session.query(Quiz).filter(Quiz.user_id == user_id).all()
+
+    def publish_quiz(self, quiz_id: UUID4, user_id: UUID4):
+        with sessionmaker(bind=db_service.engine)() as session:
+            quiz = self.get_quiz_for_user(session, quiz_id, user_id)
+            quiz.published = True
+            session.commit()
+
+    def unpublish_quiz(self, quiz_id: UUID4, user_id: UUID4):
+        with sessionmaker(bind=db_service.engine)() as session:
+            quiz = self.get_quiz_for_user(session, quiz_id, user_id)
+            quiz.published = False
+            session.commit()
