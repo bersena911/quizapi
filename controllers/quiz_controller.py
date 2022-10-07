@@ -17,20 +17,29 @@ class QuizController:
             return {"id": quiz.id}
 
     @staticmethod
-    def get_quiz(session, quiz_id: UUID4):
-        quiz = session.query(Quiz).filter(Quiz.id == quiz_id).first()
-        if not quiz or quiz.deleted:
-            raise HTTPException(status_code=404, detail="Quiz not found")
-        return quiz
+    def check_quiz_published(session, quiz_id: UUID4) -> bool:
+        return (
+            session.query(Quiz)
+            .filter(
+                Quiz.id == quiz_id
+                and Quiz.deleted.is_(False)
+                and Quiz.published.is_(True)
+            )
+            .exists()
+        ).scalar()
 
     @staticmethod
     def get_quiz_for_user(session, quiz_id: UUID4, user_id: UUID4):
         quiz = (
             session.query(Quiz)
-            .filter(Quiz.id == quiz_id and Quiz.user_id == user_id)
+            .filter(
+                Quiz.id == quiz_id
+                and Quiz.user_id == user_id
+                and Quiz.deleted.is_(False)
+            )
             .first()
         )
-        if not quiz or quiz.deleted:
+        if not quiz:
             raise HTTPException(status_code=404, detail="Quiz not found")
         return quiz
 
@@ -43,7 +52,12 @@ class QuizController:
     @staticmethod
     def get_quizzes(user_id: UUID4) -> dict:
         with sessionmaker(bind=db_service.engine)() as session:
-            return session.query(Quiz).filter(Quiz.user_id == user_id).all()
+            return (
+                session.query(Quiz)
+                .filter(Quiz.user_id == user_id)
+                .filter(Quiz.deleted.is_(False))
+                .all()
+            )
 
     def publish_quiz(self, quiz_id: UUID4, user_id: UUID4):
         with sessionmaker(bind=db_service.engine)() as session:

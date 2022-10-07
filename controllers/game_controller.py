@@ -21,8 +21,7 @@ class GameController:
     @staticmethod
     def start_game(game_body: GameStartSchema, user_id: UUID4):
         with sessionmaker(bind=db_service.engine)() as session:
-            quiz = QuizController.get_quiz(session, game_body.quiz_id)
-            if not quiz or not quiz.published or quiz.deleted:
+            if not QuizController.check_quiz_published(session, game_body.quiz_id):
                 raise HTTPException(status_code=404, detail="Quiz not found")
             game = (
                 session.query(Game)
