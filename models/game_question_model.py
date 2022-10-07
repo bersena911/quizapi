@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import Column, ForeignKey, Boolean
+from sqlalchemy import Column, ForeignKey, Boolean, Float
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -13,6 +13,7 @@ class GameQuestion(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     answered = Column(Boolean)
     skipped = Column(Boolean)
+    answer_score = Column(Float)
     question_id = Column(UUID(as_uuid=True), index=True, unique=True)
     game_id = Column(UUID(as_uuid=True), ForeignKey("games.id"))
     game_answers = relationship("GameAnswer", lazy=False)

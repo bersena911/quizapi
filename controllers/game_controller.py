@@ -4,11 +4,13 @@ from sqlalchemy.orm import sessionmaker
 
 from controllers.question_controller import QuestionController
 from controllers.quiz_controller import QuizController
+from models.answer_model import Answer
 from models.game_answer_model import GameAnswer
 from models.game_model import Game
 from models.game_question_model import GameQuestion
 from schemas.game_answer_schema import GameAnswerSchema
 from schemas.game_schema import GameStartSchema
+from schemas.question_schema import QuestionTypeEnum
 from services.db_service import db_service
 
 
@@ -21,7 +23,8 @@ class GameController:
     @staticmethod
     def start_game(game_body: GameStartSchema, user_id: UUID4):
         with sessionmaker(bind=db_service.engine)() as session:
-            if not QuizController.check_quiz_published(session, game_body.quiz_id):
+            quiz = QuizController.get_quiz(session, game_body.quiz_id)
+            if quiz.deleted or not quiz.published:
                 raise HTTPException(status_code=404, detail="Quiz not found")
             game = (
                 session.query(Game)
@@ -103,12 +106,48 @@ class GameController:
             }
 
     @staticmethod
-    def is_question_not_answered_or_skipped(game_question: GameQuestion) -> bool:
+    def check_question_answered_or_skipped(game_question: GameQuestion):
         if game_question.skipped:
             raise HTTPException(status_code=400, detail="Question already skipped")
         if game_question.answered:
             raise HTTPException(status_code=400, detail="Question already answered")
-        return True
+
+    @staticmethod
+    def calculate_answer_score(
+        user_choices: list[dict], actual_answers: list[Answer], question_type: str
+    ) -> float:
+        correct_answers_set = set()
+        false_answers_set = set()
+
+        for actual_answer in actual_answers:
+            if actual_answer.is_correct:
+                correct_answers_set.add(actual_answer.choice)
+            else:
+                false_answers_set.add(actual_answer.choice)
+
+        if question_type == QuestionTypeEnum.SINGLE_ANSWER.value:
+            if user_choices[0] in correct_answers_set:
+                return 1
+            if user_choices[0] in false_answers_set:
+                return -1
+            raise ValueError("Choice not in choices list")
+
+        if question_type == QuestionTypeEnum.MULTIPLE_ANSWERS.value:
+            plus_score = 0
+            minus_score = 0
+            for user_choice in user_choices:
+                if user_choice in correct_answers_set:
+                    plus_score += 1
+                elif user_choice in false_answers_set:
+                    minus_score += 1
+                raise ValueError("Choice not in choices list")
+
+            plus_score = len(correct_answers_set) / plus_score
+            minus_score = len(false_answers_set) / minus_score
+
+            return plus_score - minus_score
+
+        raise ValueError("Unknown question_type")
 
     def answer_question(
         self,
@@ -118,22 +157,30 @@ class GameController:
         user_id: UUID4,
     ):
         with sessionmaker(bind=db_service.engine)() as session:
+            game = self.get_game(session, game_id, user_id)
             game_question = self.get_game_question(session, game_id, question_id)
-            if self.is_question_not_answered_or_skipped(game_question):
-                game = self.get_game(session, game_question.game_id, user_id)
-                game_question.answered = True
-                for choice in answer_data.choices:
-                    session.add(
-                        GameAnswer(choice=choice, game_question_id=game_question.id)
-                    )
-                game.offset += 1
-                session.commit()
+            self.check_question_answered_or_skipped(game_question)
+            question = QuestionController.get_question(
+                session, game_question.question_id
+            )
+            score = self.calculate_answer_score(
+                answer_data.choices, question.answers, question.type
+            )
+            game.score += score
+            game_question.answer_score = score
+            game_question.answered = True
+            for choice in answer_data.choices:
+                session.add(
+                    GameAnswer(choice=choice, game_question_id=game_question.id)
+                )
+            game.offset += 1
+            session.commit()
 
     def skip_question(self, game_id: UUID4, question_id: UUID4, user_id: UUID4):
         with sessionmaker(bind=db_service.engine)() as session:
+            game = self.get_game(session, game_id, user_id)
             game_question = self.get_game_question(session, game_id, question_id)
-            if self.is_question_not_answered_or_skipped(game_question):
-                game = self.get_game(session, game_question.game_id, user_id)
-                game_question.skipped = True
-                game.offset += 1
-                session.commit()
+            self.check_question_answered_or_skipped(game_question)
+            game_question.skipped = True
+            game.offset += 1
+            session.commit()

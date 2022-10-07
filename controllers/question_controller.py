@@ -1,4 +1,3 @@
-from fastapi import HTTPException
 from pydantic import UUID4
 from sqlalchemy.orm import sessionmaker
 
@@ -16,13 +15,15 @@ class QuestionController:
             return session.query(Question).filter(Question.quiz_id == quiz_id).all()
 
     @staticmethod
+    def get_question(session, question_id: UUID4) -> Question:
+        return session.query(Question).filter(Question.id == question_id).first()
+
+    @staticmethod
     def add_questions(
         quiz_id: UUID4, questions_data: QuestionsSchema, user_id: UUID4
     ) -> None:
         with sessionmaker(bind=db_service.engine)() as session:
-            quiz = QuizController.get_quiz_for_user(quiz_id, user_id)
-            if not quiz:
-                raise HTTPException(status_code=404, detail="Quiz not found")
+            quiz = QuizController.get_quiz_for_user(session, quiz_id, user_id)
             for question_data in questions_data.questions:
                 answers = []
                 for answer in question_data.answers:
@@ -36,7 +37,7 @@ class QuestionController:
                 question = Question(
                     title=question_data.title,
                     type=question_data.type.value,
-                    quiz_id=quiz_id,
+                    quiz_id=quiz.id,
                     answers=answers,
                 )
                 session.add(question)

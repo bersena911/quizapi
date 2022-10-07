@@ -17,25 +17,24 @@ class QuizController:
             return {"id": quiz.id}
 
     @staticmethod
-    def check_quiz_published(session, quiz_id: UUID4) -> bool:
-        return (
+    def get_quiz(session, quiz_id: UUID4) -> Quiz:
+        quiz = (
             session.query(Quiz)
-            .filter(
-                Quiz.id == quiz_id
-                and Quiz.deleted.is_(False)
-                and Quiz.published.is_(True)
-            )
-            .exists()
-        ).scalar()
+            .filter((Quiz.id == quiz_id) & (Quiz.deleted.is_(False)))
+            .first()
+        )
+        if not quiz:
+            raise HTTPException(status_code=404, detail="Quiz not found")
+        return quiz
 
     @staticmethod
-    def get_quiz_for_user(session, quiz_id: UUID4, user_id: UUID4):
+    def get_quiz_for_user(session, quiz_id: UUID4, user_id: UUID4) -> Quiz:
         quiz = (
             session.query(Quiz)
             .filter(
-                Quiz.id == quiz_id
-                and Quiz.user_id == user_id
-                and Quiz.deleted.is_(False)
+                (Quiz.id == quiz_id)
+                & (Quiz.user_id == user_id)
+                & (Quiz.deleted.is_(False))
             )
             .first()
         )
