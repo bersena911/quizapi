@@ -5,7 +5,7 @@ from sqlalchemy.orm import sessionmaker
 from controllers.quiz_controller import QuizController
 from models.answer_model import Answer
 from models.question_model import Question
-from schemas.question_schema import QuestionsSchema
+from schemas.question_schema import QuestionsSchema, QuestionTypeEnum
 from services.db_service import db_service
 
 
@@ -32,13 +32,29 @@ class QuestionController:
                 )
             for question_data in questions_data.questions:
                 answers = []
+                correct_answers = 0
                 for answer in question_data.answers:
+                    if answer.is_correct:
+                        correct_answers += 1
                     answers.append(
                         Answer(
                             choice=answer.choice,
                             value=answer.value,
                             is_correct=answer.is_correct,
                         )
+                    )
+                if (
+                    question_data.type == QuestionTypeEnum.SINGLE_ANSWER
+                    and correct_answers > 1
+                ):
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"{question_data.type.value} can't have multiple correct answers",
+                    )
+                if correct_answers == 0:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="There must be at least one correct answer",
                     )
                 question = Question(
                     title=question_data.title,

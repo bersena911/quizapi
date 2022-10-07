@@ -140,10 +140,11 @@ class GameController:
                     plus_score += 1
                 elif user_choice in false_answers_set:
                     minus_score += 1
-                raise ValueError("Choice not in choices list")
+                else:
+                    raise ValueError("Choice not in choices list")
 
-            plus_score = len(correct_answers_set) / plus_score
-            minus_score = len(false_answers_set) / minus_score
+            plus_score = len(correct_answers_set) / plus_score if plus_score else 0
+            minus_score = len(false_answers_set) / minus_score if minus_score else 0
 
             return plus_score - minus_score
 
