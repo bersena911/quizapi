@@ -19,9 +19,10 @@ class QuestionController:
     def add_questions(
         quiz_id: UUID4, questions_data: QuestionsSchema, user_id: UUID4
     ) -> None:
-        if not QuizController.check_quiz_exists_for_user(quiz_id, user_id):
-            raise HTTPException(status_code=404, detail="Quiz not found")
         with sessionmaker(bind=db_service.engine)() as session:
+            quiz = QuizController.get_quiz_for_user(quiz_id, user_id)
+            if not quiz:
+                raise HTTPException(status_code=404, detail="Quiz not found")
             for question_data in questions_data.questions:
                 answers = []
                 for answer in question_data.answers:

@@ -1,7 +1,6 @@
 from fastapi import HTTPException
 from pydantic import UUID4
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.sql import exists
 
 from models.quiz_model import Quiz
 from schemas.quiz_schema import QuizSchema
@@ -18,16 +17,16 @@ class QuizController:
             return {"id": quiz.id}
 
     @staticmethod
-    def check_quiz_exists_for_user(quiz_id: UUID4, user_id: UUID4):
-        with sessionmaker(bind=db_service.engine)() as session:
-            return session.query(
-                exists().where(Quiz.id == quiz_id and Quiz.user_id == user_id)
-            ).scalar()
+    def get_quiz(session, quiz_id: UUID4):
+        return session.query(Quiz).filter(Quiz.id == quiz_id).first()
 
     @staticmethod
-    def check_quiz_exists(quiz_id: UUID4):
-        with sessionmaker(bind=db_service.engine)() as session:
-            return session.query(exists().where(Quiz.id == quiz_id)).scalar()
+    def get_quiz_for_user(session, quiz_id: UUID4, user_id: UUID4):
+        return (
+            session.query(Quiz)
+            .filter(Quiz.id == quiz_id and Quiz.user_id == user_id)
+            .first()
+        )
 
     @staticmethod
     def get_quiz_details(quiz_id: UUID4, user_id: UUID4) -> dict:
