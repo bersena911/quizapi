@@ -10,6 +10,16 @@ from services.db_service import db_service
 class QuizController:
     @staticmethod
     def create_quiz(quiz_data: QuizSchema, user_id: UUID4) -> dict:
+        """
+        Creates empty quiz
+        Args:
+            quiz_data: quiz data
+            user_id: authenticated user id
+
+        Returns:
+            dict: containing quiz id
+
+        """
         with sessionmaker(bind=db_service.engine)() as session:
             quiz = Quiz(title=quiz_data.title, published=False, user_id=user_id)
             session.add(quiz)

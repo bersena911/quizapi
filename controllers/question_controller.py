@@ -11,18 +11,46 @@ from services.db_service import db_service
 
 class QuestionController:
     @staticmethod
-    def get_questions(quiz_id: UUID4):
+    def get_questions(quiz_id: UUID4) -> list:
+        """
+        Retrieves questions from quiz
+        Args:
+            quiz_id: quiz id
+
+        Returns:
+
+        """
         with sessionmaker(bind=db_service.engine)() as session:
             return session.query(Question).filter(Question.quiz_id == quiz_id).all()
 
     @staticmethod
     def get_question(session, question_id: UUID4) -> Question:
+        """
+        Retrieves detailed info about question
+        Args:
+            session: sqlalchemy session
+            question_id: question id
+
+        Returns:
+            sqlalchemy Question object
+
+        """
         return session.query(Question).filter(Question.id == question_id).first()
 
     @staticmethod
     def add_questions(
         quiz_id: UUID4, questions_data: QuestionsSchema, user_id: UUID4
     ) -> None:
+        """
+        Adds questions to already created unpublished quiz
+        Args:
+            quiz_id: quiz id
+            questions_data: questions data
+            user_id: authenticated user id
+
+        Returns:
+
+        """
         with sessionmaker(bind=db_service.engine)() as session:
             quiz = QuizController.get_quiz_for_user(session, quiz_id, user_id)
             if quiz.published:
@@ -67,6 +95,16 @@ class QuestionController:
 
     @staticmethod
     def paginate_questions(quiz_id: UUID4, offset: int) -> Question:
+        """
+        Retrieves questions one by one
+        Args:
+            quiz_id: quiz id
+            offset: current progress in game
+
+        Returns:
+            sqlalchemy Questions object
+
+        """
         with sessionmaker(bind=db_service.engine)() as session:
             return (
                 session.query(Question)

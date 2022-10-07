@@ -16,12 +16,31 @@ from services.db_service import db_service
 
 class GameController:
     @staticmethod
-    def get_games(user_id: UUID4) -> dict:
+    def get_games(user_id: UUID4) -> list:
+        """
+        Lists all games for user
+        Args:
+            user_id: user_id for filtering
+
+        Returns:
+            list: games played by user
+
+        """
         with sessionmaker(bind=db_service.engine)() as session:
             return session.query(Game).filter(Game.user_id == user_id).all()
 
     @staticmethod
-    def start_game(game_body: GameStartSchema, user_id: UUID4):
+    def start_game(game_body: GameStartSchema, user_id: UUID4) -> dict:
+        """
+        Creates empty game with default values
+        Args:
+            game_body: payload containing quiz_id
+            user_id: authenticated user id
+
+        Returns:
+            id of started game
+
+        """
         with sessionmaker(bind=db_service.engine)() as session:
             quiz = QuizController.get_quiz(session, game_body.quiz_id)
             if quiz.deleted or not quiz.published:
@@ -52,6 +71,17 @@ class GameController:
 
     @staticmethod
     def get_game(session, game_id: UUID4, user_id: UUID4) -> Game:
+        """
+        Retrieves game by game id
+        Args:
+            session: sqlalchemy session
+            game_id: game id
+            user_id: authenticated user id
+
+        Returns:
+            sqlalchemy Game object
+
+        """
         game = (
             session.query(Game)
             .filter(Game.id == game_id and Game.user_id == user_id)
@@ -63,6 +93,17 @@ class GameController:
 
     @staticmethod
     def get_game_question(session, game_id: UUID4, question_id: UUID4) -> GameQuestion:
+        """
+        Retrieves info about answered question
+        Args:
+            session: sqlalchemy session
+            game_id: game id
+            question_id: question id
+
+        Returns:
+            sqlalchemy GameQuestion object
+
+        """
         game_question = (
             session.query(GameQuestion)
             .filter(GameQuestion.id == question_id and GameQuestion.game_id == game_id)
@@ -70,7 +111,17 @@ class GameController:
         )
         return game_question
 
-    def next_question(self, game_id: UUID4, user_id: UUID4):
+    def next_question(self, game_id: UUID4, user_id: UUID4) -> dict:
+        """
+        Retrieves next question to answer from quiz, if not answered or skipped always returns same
+        Args:
+            game_id: game id
+            user_id: authenticated user id
+
+        Returns:
+            questions details if there is next questions, otherwise raises error
+
+        """
         with sessionmaker(bind=db_service.engine)() as session:
             game = self.get_game(session, game_id, user_id)
             if game.finished:
@@ -79,7 +130,7 @@ class GameController:
             if not question:
                 game.finished = True
                 session.commit()
-                return
+                raise HTTPException(status_code=400, detail="Game is already finished")
 
             game_question = (
                 session.query(GameQuestion)
@@ -106,7 +157,15 @@ class GameController:
             }
 
     @staticmethod
-    def check_question_answered_or_skipped(game_question: GameQuestion):
+    def check_question_answered_or_skipped(game_question: GameQuestion) -> None:
+        """
+        Raises exceptions if question is already skipped or answered
+        Args:
+            game_question: game question object
+
+        Returns:
+
+        """
         if game_question.skipped:
             raise HTTPException(status_code=400, detail="Question already skipped")
         if game_question.answered:
@@ -116,6 +175,17 @@ class GameController:
     def calculate_answer_score(
         user_choices: list[dict], actual_answers: list[Answer], question_type: str
     ) -> float:
+        """
+        Calculates score for current answered question
+        Args:
+            user_choices: choices user made
+            actual_answers: actual answers stored in db
+            question_type: type of question
+
+        Returns:
+            float: score
+
+        """
         correct_answers_set = set()
         false_answers_set = set()
 
@@ -156,7 +226,18 @@ class GameController:
         game_id: UUID4,
         question_id: UUID4,
         user_id: UUID4,
-    ):
+    ) -> None:
+        """
+        Saves info about answered question
+        Args:
+            answer_data: user sent data
+            game_id: game id
+            question_id: question id
+            user_id: authenticated user id
+
+        Returns:
+
+        """
         with sessionmaker(bind=db_service.engine)() as session:
             game = self.get_game(session, game_id, user_id)
             game_question = self.get_game_question(session, game_id, question_id)
@@ -183,7 +264,17 @@ class GameController:
             game.offset += 1
             session.commit()
 
-    def skip_question(self, game_id: UUID4, question_id: UUID4, user_id: UUID4):
+    def skip_question(self, game_id: UUID4, question_id: UUID4, user_id: UUID4) -> None:
+        """
+        Skips question without modifying anything
+        Args:
+            game_id: game id
+            question_id: question id
+            user_id: authenticated user id
+
+        Returns:
+
+        """
         with sessionmaker(bind=db_service.engine)() as session:
             game = self.get_game(session, game_id, user_id)
             game_question = self.get_game_question(session, game_id, question_id)
@@ -192,7 +283,16 @@ class GameController:
             game.offset += 1
             session.commit()
 
-    def get_results(self, game_id: UUID4, user_id: UUID4):
+    def get_results(self, game_id: UUID4, user_id: UUID4) -> dict:
+        """
+        Retrieves final results of the finished game
+        Args:
+            game_id: game id
+            user_id: authenticated user id
+
+        Returns:
+
+        """
         with sessionmaker(bind=db_service.engine)() as session:
             game = self.get_game(session, game_id, user_id)
             if not game.finished:
