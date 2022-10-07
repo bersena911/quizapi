@@ -32,21 +32,25 @@ def next_question(
     return GameController().next_question(game_id, current_user.id)
 
 
-@router.post("/questions/{question_id}/submit", status_code=204)
+@router.post("/{game_id}/questions/{question_id}/submit", status_code=204)
 def answer_question(
+    game_id: UUID4,
     question_id: UUID4,
     answer_data: GameAnswerSchema,
     current_user: UserDetails = Depends(get_current_active_user),
 ):
-    return GameController().answer_question(current_user.id, question_id, answer_data)
+    return GameController().answer_question(
+        answer_data, game_id, question_id, current_user.id
+    )
 
 
-@router.post("/questions/{question_id}/skip", status_code=204)
+@router.post("/{game_id}/questions/{question_id}/skip", status_code=204)
 def skip_question(
+    game_id: UUID4,
     question_id: UUID4,
     current_user: UserDetails = Depends(get_current_active_user),
 ):
-    return GameController().skip_question(current_user.id, question_id)
+    return GameController().skip_question(game_id, question_id, current_user.id)
 
 
 @router.get("/{game_id}/results")

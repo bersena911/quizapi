@@ -47,9 +47,11 @@ class GameController:
         return game
 
     @staticmethod
-    def get_game_question(session, question_id: UUID4) -> GameQuestion:
+    def get_game_question(session, game_id: UUID4, question_id: UUID4) -> GameQuestion:
         game_question = (
-            session.query(GameQuestion).filter(GameQuestion.id == question_id).first()
+            session.query(GameQuestion)
+            .filter(GameQuestion.id == question_id and GameQuestion.game_id == game_id)
+            .first()
         )
         return game_question
 
@@ -93,10 +95,14 @@ class GameController:
         return True
 
     def answer_question(
-        self, user_id: UUID4, question_id: UUID4, answer_data: GameAnswerSchema
+        self,
+        answer_data: GameAnswerSchema,
+        game_id: UUID4,
+        question_id: UUID4,
+        user_id: UUID4,
     ):
         with sessionmaker(bind=db_service.engine)() as session:
-            game_question = self.get_game_question(session, question_id)
+            game_question = self.get_game_question(session, game_id, question_id)
             if self.is_question_not_answered_or_skipped(game_question):
                 game = self.get_game(session, game_question.game_id, user_id)
                 game_question.answered = True
@@ -107,9 +113,9 @@ class GameController:
                 game.offset += 1
                 session.commit()
 
-    def skip_question(self, user_id: UUID4, question_id: UUID4):
+    def skip_question(self, game_id: UUID4, question_id: UUID4, user_id: UUID4):
         with sessionmaker(bind=db_service.engine)() as session:
-            game_question = self.get_game_question(session, question_id)
+            game_question = self.get_game_question(session, game_id, question_id)
             if self.is_question_not_answered_or_skipped(game_question):
                 game = self.get_game(session, game_question.game_id, user_id)
                 game_question.skipped = True
