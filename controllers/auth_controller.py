@@ -38,6 +38,25 @@ class AuthController:
         encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
         return encoded_jwt
 
+    def refresh_token(
+        self, token: str, expire_minutes: int = ACCESS_TOKEN_EXPIRE_MINUTES
+    ) -> dict:
+        """
+        Creates access token using python-jose library
+        Args:
+            token: current token
+            expire_minutes: optional token expiration time. defaults to 30
+
+        Returns:
+            str: created access token
+
+        """
+        to_encode = jwt.decode(
+            token, SECRET_KEY, algorithms=[ALGORITHM], options={"verify_exp": False}
+        )
+        access_token = self.create_access_token(to_encode)
+        return {"access_token": access_token, "token_type": "Bearer"}
+
     @staticmethod
     def verify_password(plain_password: str, hashed_password: str) -> bool:
         """

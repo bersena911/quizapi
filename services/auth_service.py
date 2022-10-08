@@ -13,10 +13,6 @@ SECRET_KEY = app_config["SECRET_KEY"]
 authorization_header_scheme = HTTPBearer(auto_error=False)
 
 
-def decode_token(token: str) -> dict:
-    return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-
-
 async def get_current_user(
     request: Request,
     token: HTTPAuthorizationCredentials = Depends(authorization_header_scheme),
@@ -33,7 +29,9 @@ async def get_current_user(
     if not token:
         raise HTTPException(status_code=401, detail="Authorization Header Not Provided")
     try:
-        decoded_token = decode_token(token.credentials)
+        decoded_token = jwt.decode(
+            token.credentials, SECRET_KEY, algorithms=[ALGORITHM]
+        )
     except ExpiredSignatureError:
         raise HTTPException(status_code=400, detail="Access Token Has Expired")
     except JWTError:

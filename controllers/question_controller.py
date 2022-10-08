@@ -68,7 +68,6 @@ class QuestionController:
                         correct_answers += 1
                     answers.append(
                         Answer(
-                            choice=answer.choice,
                             value=answer.value,
                             is_correct=answer.is_correct,
                         )

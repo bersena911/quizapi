@@ -1,5 +1,5 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, UUID4
 
 
 class GameAnswerSchema(BaseModel):
-    choices: list
+    choices: list[UUID4]

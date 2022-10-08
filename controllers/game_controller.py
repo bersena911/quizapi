@@ -1,5 +1,6 @@
 from fastapi import HTTPException
 from pydantic import UUID4
+from sqlalchemy import update
 from sqlalchemy.orm import sessionmaker
 
 from controllers.question_controller import QuestionController
@@ -8,6 +9,7 @@ from models.answer_model import Answer
 from models.game_answer_model import GameAnswer
 from models.game_model import Game
 from models.game_question_model import GameQuestion
+from models.quiz_model import Quiz
 from schemas.game_answer_schema import GameAnswerSchema
 from schemas.game_schema import GameStartSchema
 from schemas.question_schema import QuestionTypeEnum
@@ -27,7 +29,14 @@ class GameController:
 
         """
         with sessionmaker(bind=db_service.engine)() as session:
-            return session.query(Game).filter(Game.user_id == user_id).all()
+            return (
+                session.query(
+                    Quiz.title, Game.id, Game.finished, Game.score, Game.quiz_id
+                )
+                .join(Quiz.games)
+                .filter(Game.user_id == user_id)
+                .all()
+            )
 
     @staticmethod
     def start_game(game_body: GameStartSchema, user_id: UUID4) -> dict:
@@ -83,7 +92,8 @@ class GameController:
 
         """
         game = (
-            session.query(Game)
+            session.query(*Quiz.__table__.columns, *Game.__table__.columns)
+            .join(Quiz.games)
             .filter(Game.id == game_id)
             .filter(Game.user_id == user_id)
             .first()
@@ -130,7 +140,9 @@ class GameController:
                 raise HTTPException(status_code=400, detail="Game is already finished")
             question = QuestionController.paginate_questions(game.quiz_id, game.offset)
             if not question:
-                game.finished = True
+                session.execute(
+                    update(Game).where(Game.id == game.id).values(finished=True)
+                )
                 session.commit()
                 raise HTTPException(status_code=400, detail="Game is already finished")
 
@@ -150,13 +162,10 @@ class GameController:
                 session.add(game_question)
                 session.commit()
             return {
-                "question_id": game_question.id,
-                "question_type": question.type,
-                "question": question.title,
-                "answers": [
-                    {"choice": answer.choice, "value": answer.value}
-                    for answer in question.answers
-                ],
+                "id": game_question.id,
+                "type": question.type,
+                "title": question.title,
+                "answers": [answer.__dict__ for answer in question.answers],
             }
 
     @staticmethod
@@ -176,7 +185,7 @@ class GameController:
 
     @staticmethod
     def calculate_answer_score(
-        user_choices: list[dict], actual_answers: list[Answer], question_type: str
+        user_choices: list[UUID4], actual_answers: list[Answer], question_type: str
     ) -> float:
         """
         Calculates score for current answered question
@@ -194,9 +203,9 @@ class GameController:
 
         for actual_answer in actual_answers:
             if actual_answer.is_correct:
-                correct_answers_set.add(actual_answer.choice)
+                correct_answers_set.add(actual_answer.id)
             else:
-                false_answers_set.add(actual_answer.choice)
+                false_answers_set.add(actual_answer.id)
 
         if question_type == QuestionTypeEnum.SINGLE_ANSWER.value:
             if user_choices[0] in correct_answers_set:
@@ -216,8 +225,8 @@ class GameController:
                 else:
                     raise ValueError("Choice not in choices list")
 
-            plus_score = len(correct_answers_set) / plus_score if plus_score else 0
-            minus_score = len(false_answers_set) / minus_score if minus_score else 0
+            plus_score = plus_score / len(correct_answers_set)
+            minus_score = minus_score / len(false_answers_set)
 
             return plus_score - minus_score
 
@@ -257,14 +266,17 @@ class GameController:
             score = self.calculate_answer_score(
                 answer_data.choices, question.answers, question.type
             )
-            game.score += score
+            session.execute(
+                update(Game)
+                .where(Game.id == game.id)
+                .values(score=game.score + score, offset=game.offset + 1)
+            )
             game_question.answer_score = score
             game_question.answered = True
             for choice in answer_data.choices:
                 session.add(
                     GameAnswer(choice=choice, game_question_id=game_question.id)
                 )
-            game.offset += 1
             session.commit()
 
     def skip_question(self, game_id: UUID4, question_id: UUID4, user_id: UUID4) -> None:
@@ -282,8 +294,11 @@ class GameController:
             game = self.get_game(session, game_id, user_id)
             game_question = self.get_game_question(session, game_id, question_id)
             self.check_question_answered_or_skipped(game_question)
+            game_question.answer_score = 0
             game_question.skipped = True
-            game.offset += 1
+            session.execute(
+                update(Game).where(Game.id == game.id).values(offset=game.offset + 1)
+            )
             session.commit()
 
     def get_results(self, game_id: UUID4, user_id: UUID4) -> dict:

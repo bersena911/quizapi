@@ -5,18 +5,19 @@ from controllers.game_controller import GameController
 from routers import APIRouter
 from schemas.auth_schema import UserDetails
 from schemas.game_answer_schema import GameAnswerSchema
-from schemas.game_schema import GameStartSchema
+from schemas.game_question_schema import NextQuestionResponse
+from schemas.game_schema import GameStartSchema, StartGameResponse, GameResponse
 from services.auth_service import get_current_active_user
 
 router = APIRouter(prefix="/games", tags=["Games"])
 
 
-@router.get("/")
+@router.get("/", response_model=list[GameResponse])
 def get_user_games(current_user: UserDetails = Depends(get_current_active_user)):
     return GameController.get_games(current_user.id)
 
 
-@router.post("/start")
+@router.post("/start", response_model=StartGameResponse)
 def start_game(
     game_body: GameStartSchema,
     current_user: UserDetails = Depends(get_current_active_user),
@@ -27,7 +28,7 @@ def start_game(
     return GameController.start_game(game_body, current_user.id)
 
 
-@router.get("/{game_id}/questions/next")
+@router.get("/{game_id}/questions/next", response_model=NextQuestionResponse)
 def next_question(
     game_id: UUID4,
     current_user: UserDetails = Depends(get_current_active_user),

@@ -16,3 +16,4 @@ class Quiz(Base):
     deleted = Column(Boolean, index=True, default=False)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
     questions = relationship("Question")
+    games = relationship("Game")
