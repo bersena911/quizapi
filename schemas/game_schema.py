@@ -15,3 +15,14 @@ class GameResponse(BaseModel):
     title: str
     finished: bool
     score: float
+
+
+class QuestionStat(BaseModel):
+    answer_score: float
+    title: str
+
+
+class FinalResultsResponse(BaseModel):
+    score: float
+    score_percentage: float
+    question_stats: list[QuestionStat]

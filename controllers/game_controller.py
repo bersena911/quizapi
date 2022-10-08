@@ -9,6 +9,7 @@ from models.answer_model import Answer
 from models.game_answer_model import GameAnswer
 from models.game_model import Game
 from models.game_question_model import GameQuestion
+from models.question_model import Question
 from models.quiz_model import Quiz
 from schemas.game_answer_schema import GameAnswerSchema
 from schemas.game_schema import GameStartSchema
@@ -314,4 +315,16 @@ class GameController:
             game = self.get_game(session, game_id, user_id)
             if not game.finished:
                 raise HTTPException(status_code=400, detail="Game is not finished yet")
-            return {"score": game.score}
+            question_stats = (
+                session.query(GameQuestion.answer_score, Question.title)
+                .join(Question, Question.id == GameQuestion.question_id)
+                .filter(GameQuestion.game_id == game_id)
+                .all()
+            )
+            max_score = len(question_stats)
+            score_percentage = game.score / max_score * 100
+            return {
+                "score": game.score,
+                "score_percentage": score_percentage,
+                "question_stats": question_stats,
+            }
