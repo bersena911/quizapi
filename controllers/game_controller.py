@@ -47,7 +47,8 @@ class GameController:
                 raise HTTPException(status_code=404, detail="Quiz not found")
             game = (
                 session.query(Game)
-                .filter(Game.quiz_id == game_body.quiz_id and Game.user_id == user_id)
+                .filter(Game.quiz_id == game_body.quiz_id)
+                .filter(Game.user_id == user_id)
                 .first()
             )
             if not game:
@@ -62,12 +63,11 @@ class GameController:
                 session.add(game)
                 session.commit()
                 return {"id": game.id}
-            elif game.finished:
+            if game.finished:
                 raise HTTPException(
                     status_code=400, detail="You already played this game"
                 )
-            else:
-                return {"id": game.id}
+            return {"id": game.id}
 
     @staticmethod
     def get_game(session, game_id: UUID4, user_id: UUID4) -> Game:
@@ -84,7 +84,8 @@ class GameController:
         """
         game = (
             session.query(Game)
-            .filter(Game.id == game_id and Game.user_id == user_id)
+            .filter(Game.id == game_id)
+            .filter(Game.user_id == user_id)
             .first()
         )
         if not game:
@@ -106,7 +107,8 @@ class GameController:
         """
         game_question = (
             session.query(GameQuestion)
-            .filter(GameQuestion.id == question_id and GameQuestion.game_id == game_id)
+            .filter(GameQuestion.id == question_id)
+            .filter(GameQuestion.game_id == game_id)
             .first()
         )
         return game_question
@@ -134,7 +136,8 @@ class GameController:
 
             game_question = (
                 session.query(GameQuestion)
-                .filter(GameQuestion.question_id == question.id and Game.id == game_id)
+                .filter(GameQuestion.question_id == question.id)
+                .filter(GameQuestion.game_id == game_id)
                 .first()
             )
             if not game_question:

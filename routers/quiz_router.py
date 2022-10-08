@@ -39,9 +39,7 @@ def get_quiz_details(
     """
     Retrieve Quiz Details
     """
-    return QuizDetails(
-        **QuizController().get_quiz_details(quiz_id, current_user.id).__dict__
-    )
+    return QuizController().get_quiz_details(quiz_id, current_user.id).__dict__
 
 
 @router.patch("/{quiz_id}/publish", status_code=204)

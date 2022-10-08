@@ -14,6 +14,6 @@ class GameQuestion(Base):
     answered = Column(Boolean)
     skipped = Column(Boolean)
     answer_score = Column(Float)
-    question_id = Column(UUID(as_uuid=True), index=True, unique=True)
+    question_id = Column(UUID(as_uuid=True), index=True)
     game_id = Column(UUID(as_uuid=True), ForeignKey("games.id"))
     game_answers = relationship("GameAnswer", lazy=False)

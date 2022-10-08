@@ -19,7 +19,7 @@ def register(register_data: RegisterSchema):
     """
     User Registration endpoint
     """
-    return RegisterResponse(**AuthController().register(register_data))
+    return AuthController().register(register_data)
 
 
 @router.post("/login", response_model=LoginResponse)
@@ -27,7 +27,7 @@ def login(login_data: LoginSchema):
     """
     User Login endpoint
     """
-    return LoginResponse(**AuthController().login(login_data))
+    return AuthController().login(login_data)
 
 
 @router.get("/me", response_model=UserDetails)
