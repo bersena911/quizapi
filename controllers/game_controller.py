@@ -62,7 +62,6 @@ class GameController:
             )
             if not game:
                 game = Game(
-                    started=True,
                     finished=False,
                     score=0,
                     offset=0,

@@ -11,7 +11,6 @@ class Game(Base):
     __tablename__ = "games"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    started = Column(Boolean)
     finished = Column(Boolean)
     score = Column(Float)
     offset = Column(Integer)

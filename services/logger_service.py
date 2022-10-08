@@ -3,7 +3,9 @@ import logging.config
 LOG_CONFIG = {
     "version": 1,
     "disable_existing_loggers": True,
-    "formatters": {"default": {"format": "%(asctime)s [%(process)s] %(levelname)s: %(message)s"}},
+    "formatters": {
+        "default": {"format": "%(asctime)s [%(process)s] %(levelname)s: %(message)s"}
+    },
     "handlers": {
         "console": {
             "formatter": "default",
