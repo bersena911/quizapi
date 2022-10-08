@@ -31,3 +31,15 @@ class QuestionResponse(BaseModel):
     title: str
     type: str
     answers: list[AnswerResponse]
+
+
+class UpdateQuestionSchema(BaseModel):
+    title: str | None = None
+    type: QuestionTypeEnum | None = None
+    answers: conlist(AnswerSchema, min_items=2, max_items=5) | None = None
+
+    class Config:
+        """Extra configuration options"""
+
+        anystr_strip_whitespace = True
+        min_anystr_length = 1

@@ -8,6 +8,7 @@ from schemas.quiz_schema import (
     QuizSchema,
     QuizCreateResponse,
     QuizResponse,
+    UpdateQuizSchema,
 )
 from services.auth_service import get_current_active_user
 
@@ -60,3 +61,15 @@ def delete_quiz(
     Delete quiz
     """
     return QuizController().delete_quiz(quiz_id, current_user.id)
+
+
+@router.patch("/{quiz_id}", status_code=204)
+def update_quiz(
+    quiz_id: UUID4,
+    quiz_data: UpdateQuizSchema,
+    current_user: UserDetails = Depends(get_current_active_user),
+):
+    """
+    Update quiz
+    """
+    return QuizController().update_quiz(quiz_id, quiz_data, current_user.id)

@@ -212,7 +212,7 @@ class GameController:
                 return 1
             if user_choices[0] in false_answers_set:
                 return -1
-            raise ValueError("Choice not in choices list")
+            raise HTTPException(status_code=400, detail="Choice not in choices list")
 
         if question_type == QuestionTypeEnum.MULTIPLE_ANSWERS.value:
             plus_score = 0
@@ -223,7 +223,9 @@ class GameController:
                 elif user_choice in false_answers_set:
                     minus_score += 1
                 else:
-                    raise ValueError("Choice not in choices list")
+                    raise HTTPException(
+                        status_code=400, detail="Choice not in choices list"
+                    )
 
             plus_score = plus_score / len(correct_answers_set)
             minus_score = minus_score / len(false_answers_set)

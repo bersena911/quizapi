@@ -4,7 +4,11 @@ from pydantic import UUID4
 from controllers.question_controller import QuestionController
 from routers import APIRouter
 from schemas.auth_schema import UserDetails
-from schemas.question_schema import QuestionsSchema, QuestionResponse
+from schemas.question_schema import (
+    QuestionsSchema,
+    QuestionResponse,
+    UpdateQuestionSchema,
+)
 from services.auth_service import get_current_active_user
 
 router = APIRouter(prefix="/quizzes/{quiz_id}/questions", tags=["Questions"])
@@ -29,4 +33,31 @@ def add_questions(
     """
     Add questions to quiz
     """
-    return QuestionController.add_questions(quiz_id, question_data, current_user.id)
+    return QuestionController().add_questions(quiz_id, question_data, current_user.id)
+
+
+@router.delete("/{question_id}", status_code=204)
+def delete_question(
+    quiz_id: UUID4,
+    question_id: UUID4,
+    current_user: UserDetails = Depends(get_current_active_user),
+):
+    """
+    Delete question from quiz
+    """
+    return QuestionController().delete_question(quiz_id, question_id, current_user.id)
+
+
+@router.patch("/{question_id}", status_code=204)
+def update_question(
+    quiz_id: UUID4,
+    question_id: UUID4,
+    question_data: UpdateQuestionSchema,
+    current_user: UserDetails = Depends(get_current_active_user),
+):
+    """
+    Update question in quiz
+    """
+    return QuestionController().update_question(
+        quiz_id, question_id, question_data, current_user.id
+    )

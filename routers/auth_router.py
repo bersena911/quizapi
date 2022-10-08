@@ -1,4 +1,4 @@
-from fastapi import Depends
+from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials
 
 from controllers.auth_controller import AuthController
@@ -36,6 +36,8 @@ def refresh(token: HTTPAuthorizationCredentials = Depends(authorization_header_s
     """
     User Login endpoint
     """
+    if not token:
+        raise HTTPException(status_code=401, detail="Authorization Header Not Provided")
     return AuthController().refresh_token(token.credentials)
 
 

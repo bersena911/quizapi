@@ -19,3 +19,13 @@ class QuizResponse(BaseModel):
     id: UUID4
     title: str
     published: bool
+
+
+class UpdateQuizSchema(BaseModel):
+    title: str
+
+    class Config:
+        """Extra configuration options"""
+
+        anystr_strip_whitespace = True
+        min_anystr_length = 1

@@ -3,7 +3,7 @@ from pydantic import UUID4
 from sqlalchemy.orm import sessionmaker
 
 from models.quiz_model import Quiz
-from schemas.quiz_schema import QuizSchema
+from schemas.quiz_schema import QuizSchema, UpdateQuizSchema
 from services.db_service import db_service
 
 
@@ -134,4 +134,26 @@ class QuizController:
         with sessionmaker(bind=db_service.engine)() as session:
             quiz = self.get_quiz_for_user(session, quiz_id, user_id)
             quiz.deleted = True
+            session.commit()
+
+    def update_quiz(
+        self, quiz_id: UUID4, quiz_data: UpdateQuizSchema, user_id: UUID4
+    ) -> None:
+        """
+        Updates quiz row as deleted in db
+        Args:
+            quiz_id: quiz id
+            quiz_data: quiz data
+            user_id: authenticated user id
+
+        Returns:
+
+        """
+        with sessionmaker(bind=db_service.engine)() as session:
+            quiz = self.get_quiz_for_user(session, quiz_id, user_id)
+            if quiz.published:
+                raise HTTPException(
+                    status_code=400, detail="Can't update published quiz"
+                )
+            quiz.title = quiz_data.title
             session.commit()
