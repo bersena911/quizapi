@@ -17,7 +17,7 @@ def get_questions(
     """
     Get questions from quiz
     """
-    return QuestionController.get_questions(quiz_id)
+    return QuestionController.get_questions(quiz_id, current_user.id)
 
 
 @router.post("/", status_code=204)

@@ -36,13 +36,21 @@ def get_user_quizzes(current_user: UserDetails = Depends(get_current_active_user
 def get_quiz_details(
     quiz_id: UUID4, current_user: UserDetails = Depends(get_current_active_user)
 ):
-    return QuizDetails(**QuizController().get_quiz_details(quiz_id, current_user.id))
+    """
+    Retrieve Quiz Details
+    """
+    return QuizDetails(
+        **QuizController().get_quiz_details(quiz_id, current_user.id).__dict__
+    )
 
 
 @router.patch("/{quiz_id}/publish", status_code=204)
 def publish_quiz(
     quiz_id: UUID4, current_user: UserDetails = Depends(get_current_active_user)
 ):
+    """
+    Publish quiz
+    """
     return QuizController().publish_quiz(quiz_id, current_user.id)
 
 
@@ -50,4 +58,7 @@ def publish_quiz(
 def delete_quiz(
     quiz_id: UUID4, current_user: UserDetails = Depends(get_current_active_user)
 ):
+    """
+    Delete quiz
+    """
     return QuizController().delete_quiz(quiz_id, current_user.id)

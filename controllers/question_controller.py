@@ -11,17 +11,19 @@ from services.db_service import db_service
 
 class QuestionController:
     @staticmethod
-    def get_questions(quiz_id: UUID4) -> list:
+    def get_questions(quiz_id: UUID4, user_id: UUID4) -> list[Question]:
         """
         Retrieves questions from quiz
         Args:
             quiz_id: quiz id
+            user_id: authenticated user id
 
         Returns:
 
         """
         with sessionmaker(bind=db_service.engine)() as session:
-            return session.query(Question).filter(Question.quiz_id == quiz_id).all()
+            quiz = QuizController.get_quiz_for_user(session, quiz_id, user_id)
+            return session.query(Question).filter(Question.quiz_id == quiz.id).all()
 
     @staticmethod
     def get_question(session, question_id: UUID4) -> Question:

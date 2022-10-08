@@ -28,6 +28,16 @@ class QuizController:
 
     @staticmethod
     def get_quiz(session, quiz_id: UUID4) -> Quiz:
+        """
+        Retrieves quiz by id
+        Args:
+            session: sqlalchemy session
+            quiz_id: quiz id
+
+        Returns:
+            sqlalchemy Quiz object
+
+        """
         quiz = (
             session.query(Quiz)
             .filter((Quiz.id == quiz_id) & (Quiz.deleted.is_(False)))
@@ -39,6 +49,17 @@ class QuizController:
 
     @staticmethod
     def get_quiz_for_user(session, quiz_id: UUID4, user_id: UUID4) -> Quiz:
+        """
+        Retrieves quiz created by user
+        Args:
+            session: sqlalchemy session
+            quiz_id: quiz id
+            user_id: authenticated user id
+
+        Returns:
+            sqlalchemy Quiz object
+
+        """
         quiz = (
             session.query(Quiz)
             .filter(
@@ -52,14 +73,31 @@ class QuizController:
             raise HTTPException(status_code=404, detail="Quiz not found")
         return quiz
 
-    def get_quiz_details(self, quiz_id: UUID4, user_id: UUID4) -> dict:
+    def get_quiz_details(self, quiz_id: UUID4, user_id: UUID4) -> Quiz:
+        """
+        Retrieves quiz created by user
+        Args:
+            quiz_id: quiz id
+            user_id: authenticated user id
+
+        Returns:
+            sqlalchemy Quiz object
+
+        """
         with sessionmaker(bind=db_service.engine)() as session:
-            quiz = self.get_quiz_for_user(session, quiz_id, user_id)
-            quiz_details = quiz.__dict__
-            return quiz_details
+            return self.get_quiz_for_user(session, quiz_id, user_id)
 
     @staticmethod
-    def get_quizzes(user_id: UUID4) -> dict:
+    def get_quizzes(user_id: UUID4) -> list[Quiz]:
+        """
+        Retrieves quizzes created by user
+        Args:
+            user_id: authenticated user id
+
+        Returns:
+            list of Quiz objects
+
+        """
         with sessionmaker(bind=db_service.engine)() as session:
             return (
                 session.query(Quiz)
@@ -68,13 +106,31 @@ class QuizController:
                 .all()
             )
 
-    def publish_quiz(self, quiz_id: UUID4, user_id: UUID4):
+    def publish_quiz(self, quiz_id: UUID4, user_id: UUID4) -> None:
+        """
+        Updates quiz row as published in db
+        Args:
+            quiz_id: quiz id
+            user_id: authenticated user id
+
+        Returns:
+
+        """
         with sessionmaker(bind=db_service.engine)() as session:
             quiz = self.get_quiz_for_user(session, quiz_id, user_id)
             quiz.published = True
             session.commit()
 
-    def delete_quiz(self, quiz_id: UUID4, user_id: UUID4):
+    def delete_quiz(self, quiz_id: UUID4, user_id: UUID4) -> None:
+        """
+        Updates quiz row as deleted in db
+        Args:
+            quiz_id: quiz id
+            user_id: authenticated user id
+
+        Returns:
+
+        """
         with sessionmaker(bind=db_service.engine)() as session:
             quiz = self.get_quiz_for_user(session, quiz_id, user_id)
             quiz.deleted = True

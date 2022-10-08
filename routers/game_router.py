@@ -21,6 +21,9 @@ def start_game(
     game_body: GameStartSchema,
     current_user: UserDetails = Depends(get_current_active_user),
 ):
+    """
+    Start a new game from quiz
+    """
     return GameController.start_game(game_body, current_user.id)
 
 
@@ -29,6 +32,9 @@ def next_question(
     game_id: UUID4,
     current_user: UserDetails = Depends(get_current_active_user),
 ):
+    """
+    Retrieves next question, returns same if question is not answered or skipped.
+    """
     return GameController().next_question(game_id, current_user.id)
 
 
@@ -39,6 +45,9 @@ def answer_question(
     answer_data: GameAnswerSchema,
     current_user: UserDetails = Depends(get_current_active_user),
 ):
+    """
+    Answer a question
+    """
     return GameController().answer_question(
         answer_data, game_id, question_id, current_user.id
     )
@@ -50,6 +59,9 @@ def skip_question(
     question_id: UUID4,
     current_user: UserDetails = Depends(get_current_active_user),
 ):
+    """
+    Skip question
+    """
     return GameController().skip_question(game_id, question_id, current_user.id)
 
 
@@ -58,4 +70,7 @@ def get_results(
     game_id: UUID4,
     current_user: UserDetails = Depends(get_current_active_user),
 ):
+    """
+    Get final results
+    """
     return GameController().get_results(game_id, current_user.id)
