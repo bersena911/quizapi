@@ -37,7 +37,10 @@ class QuestionController:
             sqlalchemy Question object
 
         """
-        return session.query(Question).filter(Question.id == question_id).first()
+        question = session.query(Question).filter(Question.id == question_id).first()
+        if not question:
+            raise HTTPException(status_code=400, detail="Question not found")
+        return question
 
     @staticmethod
     def add_questions(
@@ -59,6 +62,11 @@ class QuestionController:
                 raise HTTPException(
                     status_code=400,
                     detail="Can't add questions to already published quiz",
+                )
+            if len(questions_data.questions) + len(quiz.questions) > 10:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Maximum number of questions per quiz is 10",
                 )
             for question_data in questions_data.questions:
                 answers = []

@@ -13,7 +13,7 @@ class QuestionTypeEnum(Enum):
 class QuestionSchema(BaseModel):
     title: str
     type: QuestionTypeEnum
-    answers: conlist(AnswerSchema, min_items=2)
+    answers: conlist(AnswerSchema, min_items=2, max_items=5)
 
     class Config:
         """Extra configuration options"""
@@ -23,4 +23,4 @@ class QuestionSchema(BaseModel):
 
 
 class QuestionsSchema(BaseModel):
-    questions: list[QuestionSchema]
+    questions: conlist(QuestionSchema, min_items=1, max_items=10)
