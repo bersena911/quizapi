@@ -7,7 +7,7 @@ from schemas.auth_schema import UserDetails
 from schemas.quiz_schema import (
     QuizSchema,
     QuizCreateResponse,
-    QuizDetails,
+    QuizResponse,
 )
 from services.auth_service import get_current_active_user
 
@@ -24,7 +24,7 @@ def create_quiz(
     return QuizCreateResponse(**QuizController.create_quiz(quiz_data, current_user.id))
 
 
-@router.get("/")
+@router.get("/", response_model=list[QuizResponse])
 def get_user_quizzes(current_user: UserDetails = Depends(get_current_active_user)):
     """
     Create empty quiz
@@ -32,7 +32,7 @@ def get_user_quizzes(current_user: UserDetails = Depends(get_current_active_user
     return QuizController.get_quizzes(current_user.id)
 
 
-@router.get("/{quiz_id}", response_model=QuizDetails)
+@router.get("/{quiz_id}", response_model=QuizResponse)
 def get_quiz_details(
     quiz_id: UUID4, current_user: UserDetails = Depends(get_current_active_user)
 ):

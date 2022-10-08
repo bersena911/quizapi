@@ -100,7 +100,7 @@ class QuizController:
         """
         with sessionmaker(bind=db_service.engine)() as session:
             return (
-                session.query(Quiz)
+                session.query(Quiz.id, Quiz.title, Quiz.published)
                 .filter(Quiz.user_id == user_id)
                 .filter(Quiz.deleted.is_(False))
                 .all()

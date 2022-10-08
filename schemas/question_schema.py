@@ -1,8 +1,8 @@
 from enum import Enum
 
-from pydantic import BaseModel, conlist
+from pydantic import BaseModel, conlist, UUID4
 
-from schemas.answers_schema import AnswerSchema
+from schemas.answers_schema import AnswerSchema, AnswerResponse
 
 
 class QuestionTypeEnum(Enum):
@@ -24,3 +24,10 @@ class QuestionSchema(BaseModel):
 
 class QuestionsSchema(BaseModel):
     questions: conlist(QuestionSchema, min_items=1, max_items=10)
+
+
+class QuestionResponse(BaseModel):
+    id: UUID4
+    title: str
+    type: str
+    answers: list[AnswerResponse]

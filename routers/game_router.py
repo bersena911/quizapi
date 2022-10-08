@@ -6,7 +6,12 @@ from routers import APIRouter
 from schemas.auth_schema import UserDetails
 from schemas.game_answer_schema import GameAnswerSchema
 from schemas.game_question_schema import NextQuestionResponse
-from schemas.game_schema import GameStartSchema, StartGameResponse, GameResponse
+from schemas.game_schema import (
+    GameStartSchema,
+    StartGameResponse,
+    GameResponse,
+    FinalResultsResponse,
+)
 from services.auth_service import get_current_active_user
 
 router = APIRouter(prefix="/games", tags=["Games"])
@@ -66,7 +71,7 @@ def skip_question(
     return GameController().skip_question(game_id, question_id, current_user.id)
 
 
-@router.get("/{game_id}/results")
+@router.get("/{game_id}/results", response_model=FinalResultsResponse)
 def get_results(
     game_id: UUID4,
     current_user: UserDetails = Depends(get_current_active_user),

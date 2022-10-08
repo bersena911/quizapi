@@ -15,7 +15,7 @@ class QuizCreateResponse(BaseModel):
     id: UUID4
 
 
-class QuizDetails(BaseModel):
+class QuizResponse(BaseModel):
     id: UUID4
     title: str
     published: bool
