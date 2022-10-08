@@ -2,7 +2,11 @@ from fastapi import HTTPException
 from pydantic import UUID4
 from sqlalchemy.orm import sessionmaker
 
+from models.game_model import Game
+from models.game_question_model import GameQuestion
+from models.question_model import Question
 from models.quiz_model import Quiz
+from models.user_model import User
 from schemas.quiz_schema import QuizSchema, UpdateQuizSchema
 from services.db_service import db_service
 
@@ -157,3 +161,57 @@ class QuizController:
                 )
             quiz.title = quiz_data.title
             session.commit()
+
+    def get_quiz_games(self, quiz_id: UUID4, user_id: UUID4):
+        """
+        Retrieves games played in the quiz
+        Args:
+            quiz_id: quiz id
+            user_id: authenticated user id
+
+        Returns:
+            list of games played in the quiz
+
+        """
+        with sessionmaker(bind=db_service.engine)() as session:
+            quiz = self.get_quiz_for_user(session, quiz_id, user_id)
+            return (
+                session.query(
+                    Game.id,
+                    Game.finished,
+                    Game.score,
+                    Game.quiz_id,
+                    Game.user_id,
+                    Quiz.title,
+                    User.username,
+                )
+                .join(Quiz, Game.quiz_id == Quiz.id)
+                .join(User, Game.user_id == User.id)
+                .filter(Game.quiz_id == quiz.id)
+                .all()
+            )
+
+    def get_quiz_game_details(self, quiz_id: UUID4, game_id: UUID4, user_id: UUID4):
+        """
+        Retrieves detailed info about quiz game
+        Args:
+            quiz_id: quiz id
+            game_id: game id
+            user_id: authenticated user id
+
+        Returns:
+            stats about single question
+
+        """
+        with sessionmaker(bind=db_service.engine)() as session:
+            quiz = self.get_quiz_for_user(session, quiz_id, user_id)
+            question_stats = (
+                session.query(GameQuestion.answer_score, Question.title)
+                .join(Question, Question.id == GameQuestion.question_id)
+                .filter(GameQuestion.game_id == game_id)
+                .filter(Question.quiz_id == quiz.id)
+                .all()
+            )
+            return {
+                "question_stats": question_stats,
+            }
