@@ -39,10 +39,9 @@ class GameController:
                 .join(Quiz.games)
                 .filter(Game.user_id == user_id)
             )
-            total_count = query.count()
             games = query.limit(limit).offset(offset).all()
             return {
-                "total_count": total_count,
+                "total_count": query.count(),
                 "limit": limit,
                 "offset": offset,
                 "items": games,
