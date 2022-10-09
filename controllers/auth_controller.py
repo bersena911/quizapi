@@ -118,7 +118,7 @@ class AuthController:
                 last_name=register_data.last_name,
                 email=register_data.email,
                 password=self.get_password_hash(register_data.password),
-                disabled=True,
+                disabled=False,
             )
             session.add(user)
             session.commit()

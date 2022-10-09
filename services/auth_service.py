@@ -53,7 +53,6 @@ async def get_current_active_user(
     Returns:
 
     """
-    # Comment out this cause we don't have admin rights to enable user
-    # if current_user.disabled:
-    #     raise HTTPException(status_code=403, detail="Inactive user")
+    if current_user.disabled:
+        raise HTTPException(status_code=403, detail="Inactive user")
     return current_user
