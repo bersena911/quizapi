@@ -15,7 +15,7 @@ from services.db_service import db_service
 
 class QuestionController:
     @staticmethod
-    def get_questions(quiz_id: UUID4, user_id: UUID4) -> list[dict]:
+    def get_questions(quiz_id: UUID4, user_id: UUID4) -> dict:
         """
         Retrieves questions from quiz
         Args:
@@ -27,7 +27,7 @@ class QuestionController:
         """
         with sessionmaker(bind=db_service.engine)() as session:
             quiz = QuizController.get_quiz_for_user(session, quiz_id, user_id)
-            return [
+            items = [
                 {
                     "id": question.id,
                     "title": question.title,
@@ -38,6 +38,12 @@ class QuestionController:
                 .filter(Question.quiz_id == quiz.id)
                 .all()
             ]
+            return {
+                "total_count": len(items),
+                "limit": len(items),
+                "offset": 0,
+                "items": items,
+            }
 
     @staticmethod
     def get_question(session, question_id: UUID4) -> Question:

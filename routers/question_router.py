@@ -2,6 +2,7 @@ from fastapi import Depends
 from pydantic import UUID4
 
 from controllers.question_controller import QuestionController
+from helpers.pagination_helper import Paginate
 from routers import APIRouter
 from schemas.auth_schema import UserDetails
 from schemas.question_schema import (
@@ -14,7 +15,7 @@ from services.auth_service import get_current_active_user
 router = APIRouter(prefix="/quizzes/{quiz_id}/questions", tags=["Questions"])
 
 
-@router.get("/", response_model=list[QuestionResponse])
+@router.get("/", response_model=Paginate[QuestionResponse])
 def get_questions(
     quiz_id: UUID4, current_user: UserDetails = Depends(get_current_active_user)
 ):

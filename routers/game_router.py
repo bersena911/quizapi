@@ -2,6 +2,7 @@ from fastapi import Depends
 from pydantic import UUID4
 
 from controllers.game_controller import GameController
+from helpers.pagination_helper import pagination_parameters, PaginateSchema, Paginate
 from routers import APIRouter
 from schemas.auth_schema import UserDetails
 from schemas.game_answer_schema import GameAnswerSchema
@@ -17,9 +18,14 @@ from services.auth_service import get_current_active_user
 router = APIRouter(prefix="/games", tags=["Games"])
 
 
-@router.get("/", response_model=list[GameResponse])
-def get_user_games(current_user: UserDetails = Depends(get_current_active_user)):
-    return GameController.get_games(current_user.id)
+@router.get("/", response_model=Paginate[GameResponse])
+def get_user_games(
+    pagination: PaginateSchema = Depends(pagination_parameters),
+    current_user: UserDetails = Depends(get_current_active_user),
+):
+    return GameController.get_games(
+        current_user.id, pagination.limit, pagination.offset
+    )
 
 
 @router.post("/start", response_model=StartGameResponse)

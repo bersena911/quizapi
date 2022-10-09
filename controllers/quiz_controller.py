@@ -92,23 +92,31 @@ class QuizController:
             return self.get_quiz_for_user(session, quiz_id, user_id)
 
     @staticmethod
-    def get_quizzes(user_id: UUID4) -> list[Quiz]:
+    def get_quizzes(user_id: UUID4, limit: int, offset: int) -> dict:
         """
         Retrieves quizzes created by user
         Args:
             user_id: authenticated user id
+            limit: limit
+            offset: offset
 
         Returns:
             list of Quiz objects
 
         """
         with sessionmaker(bind=db_service.engine)() as session:
-            return (
+            query = (
                 session.query(Quiz.id, Quiz.title, Quiz.published)
                 .filter(Quiz.user_id == user_id)
                 .filter(Quiz.deleted.is_(False))
-                .all()
             )
+            quizzes = query.limit(limit).offset(offset).all()
+            return {
+                "total_count": query.count(),
+                "limit": limit,
+                "offset": offset,
+                "items": quizzes,
+            }
 
     def publish_quiz(self, quiz_id: UUID4, user_id: UUID4) -> None:
         """
@@ -162,12 +170,16 @@ class QuizController:
             quiz.title = quiz_data.title
             session.commit()
 
-    def get_quiz_games(self, quiz_id: UUID4, user_id: UUID4):
+    def get_quiz_games(
+        self, quiz_id: UUID4, user_id: UUID4, limit: int, offset: int
+    ) -> dict:
         """
         Retrieves games played in the quiz
         Args:
             quiz_id: quiz id
             user_id: authenticated user id
+            limit: limit
+            offset: offset
 
         Returns:
             list of games played in the quiz
@@ -175,7 +187,7 @@ class QuizController:
         """
         with sessionmaker(bind=db_service.engine)() as session:
             quiz = self.get_quiz_for_user(session, quiz_id, user_id)
-            return (
+            query = (
                 session.query(
                     Game.id,
                     Game.finished,
@@ -188,8 +200,14 @@ class QuizController:
                 .join(Quiz, Game.quiz_id == Quiz.id)
                 .join(User, Game.user_id == User.id)
                 .filter(Game.quiz_id == quiz.id)
-                .all()
             )
+            games = query.all()
+            return {
+                "total_count": query.count,
+                "limit": limit,
+                "offset": offset,
+                "items": games,
+            }
 
     def get_quiz_game_details(self, quiz_id: UUID4, game_id: UUID4, user_id: UUID4):
         """

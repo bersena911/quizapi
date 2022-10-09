@@ -19,25 +19,34 @@ from services.db_service import db_service
 
 class GameController:
     @staticmethod
-    def get_games(user_id: UUID4) -> list:
+    def get_games(user_id: UUID4, limit: int, offset: int) -> dict:
         """
         Lists all games for user
         Args:
             user_id: user_id for filtering
+            limit: limit
+            offset: offset
 
         Returns:
             list: games played by user
 
         """
         with sessionmaker(bind=db_service.engine)() as session:
-            return (
+            query = (
                 session.query(
                     Quiz.title, Game.id, Game.finished, Game.score, Game.quiz_id
                 )
                 .join(Quiz.games)
                 .filter(Game.user_id == user_id)
-                .all()
             )
+            total_count = query.count()
+            games = query.limit(limit).offset(offset).all()
+            return {
+                "total_count": total_count,
+                "limit": limit,
+                "offset": offset,
+                "items": games,
+            }
 
     @staticmethod
     def start_game(game_body: GameStartSchema, user_id: UUID4) -> dict:
@@ -121,6 +130,8 @@ class GameController:
             .filter(GameQuestion.game_id == game_id)
             .first()
         )
+        if not game_question:
+            raise HTTPException(status_code=400, detail="Question not found for game")
         return game_question
 
     def next_question(self, game_id: UUID4, user_id: UUID4) -> dict:

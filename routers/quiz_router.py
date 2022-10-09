@@ -2,6 +2,7 @@ from fastapi import Depends
 from pydantic import UUID4
 
 from controllers.quiz_controller import QuizController
+from helpers.pagination_helper import PaginateSchema, pagination_parameters, Paginate
 from routers import APIRouter
 from schemas.auth_schema import UserDetails
 from schemas.game_schema import QuizGamesResponse, GameDetailResponse
@@ -26,12 +27,17 @@ def create_quiz(
     return QuizCreateResponse(**QuizController.create_quiz(quiz_data, current_user.id))
 
 
-@router.get("/", response_model=list[QuizResponse])
-def get_user_quizzes(current_user: UserDetails = Depends(get_current_active_user)):
+@router.get("/", response_model=Paginate[QuizResponse])
+def get_user_quizzes(
+    pagination: PaginateSchema = Depends(pagination_parameters),
+    current_user: UserDetails = Depends(get_current_active_user),
+):
     """
     Create empty quiz
     """
-    return QuizController.get_quizzes(current_user.id)
+    return QuizController.get_quizzes(
+        current_user.id, pagination.limit, pagination.offset
+    )
 
 
 @router.get("/{quiz_id}", response_model=QuizResponse)
@@ -76,15 +82,18 @@ def update_quiz(
     return QuizController().update_quiz(quiz_id, quiz_data, current_user.id)
 
 
-@router.get("/{quiz_id}/games", response_model=list[QuizGamesResponse])
+@router.get("/{quiz_id}/games", response_model=Paginate[QuizGamesResponse])
 def get_quiz_games(
     quiz_id: UUID4,
+    pagination: PaginateSchema = Depends(pagination_parameters),
     current_user: UserDetails = Depends(get_current_active_user),
 ):
     """
     Get lis of quiz games
     """
-    return QuizController().get_quiz_games(quiz_id, current_user.id)
+    return QuizController().get_quiz_games(
+        quiz_id, current_user.id, pagination.limit, pagination.offset
+    )
 
 
 @router.get("/{quiz_id}/games/{game_id}", response_model=GameDetailResponse)
