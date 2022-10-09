@@ -11,10 +11,8 @@ class StartGameResponse(BaseModel):
 
 class GameResponse(BaseModel):
     id: UUID4
-    quiz_id: UUID4
     title: str
     finished: bool
-    score: float
 
 
 class QuestionStat(BaseModel):
