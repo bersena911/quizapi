@@ -63,18 +63,15 @@ class QuestionController:
         return question
 
     @staticmethod
-    def validate_answers(answers: list, question_type: str):
+    def validate_answers(answers: list, question_type: QuestionTypeEnum):
         correct_answers = 0
         for answer in answers:
             if answer.is_correct:
                 correct_answers += 1
-        if (
-            question_type == QuestionTypeEnum.SINGLE_ANSWER.value
-            and correct_answers > 1
-        ):
+        if question_type == QuestionTypeEnum.SINGLE_ANSWER and correct_answers > 1:
             raise HTTPException(
                 status_code=400,
-                detail=f"{question_type} can't have multiple correct answers",
+                detail=f"{question_type.value} can't have multiple correct answers",
             )
         if correct_answers == 0:
             raise HTTPException(
@@ -191,17 +188,19 @@ class QuestionController:
                 )
             question = self.get_question(session, question_id)
             if question_data.type and question_data.answers:
-                self.validate_answers(question_data.answers, question_data.type.value)
+                self.validate_answers(question_data.answers, question_data.type)
                 question.answers = [
                     Answer(value=answer.value, is_correct=answer.is_correct)
                     for answer in question_data.answers
                 ]
                 question.type = question_data.type.value
             elif question_data.type and question_data.type != question.type:
-                self.validate_answers(question.answers, question_data.type.value)
+                self.validate_answers(question.answers, question_data.type)
                 question.type = question_data.type.value
             elif question_data.answers:
-                self.validate_answers(question_data.answers, question.type)
+                self.validate_answers(
+                    question_data.answers, QuestionTypeEnum[question.type]
+                )
                 question.answers = [
                     Answer(value=answer.value, is_correct=answer.is_correct)
                     for answer in question_data.answers

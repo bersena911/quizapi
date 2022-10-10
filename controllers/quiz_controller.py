@@ -130,6 +130,10 @@ class QuizController:
         """
         with sessionmaker(bind=db_service.engine)() as session:
             quiz = self.get_quiz_for_user(session, quiz_id, user_id)
+            if len(quiz.questions) == 0:
+                raise HTTPException(
+                    status_code=400, detail="Can't publish quiz without questions"
+                )
             quiz.published = True
             session.commit()
 
