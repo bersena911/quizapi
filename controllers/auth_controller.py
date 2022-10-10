@@ -4,6 +4,7 @@ from fastapi import HTTPException
 from jose import jwt
 from passlib.context import CryptContext
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.sql import exists
 
 from models.user_model import User
 from schemas.auth_schema import RegisterSchema, LoginSchema, UserDetails
@@ -101,6 +102,14 @@ class AuthController:
             return False
         return True
 
+    @staticmethod
+    def check_user_exists(session, username: str, email: str) -> bool:
+        if session.query(exists().where(User.email == email)).scalar():
+            raise HTTPException(status_code=401, detail="Email already taken")
+        if session.query(exists().where(User.username == username)).scalar():
+            raise HTTPException(status_code=401, detail="Username already taken")
+        return True
+
     def register(self, register_data: RegisterSchema) -> dict:
         """
         Registers user in db from input data
@@ -112,6 +121,7 @@ class AuthController:
 
         """
         with sessionmaker(bind=db_service.engine)() as session:
+            self.check_user_exists(session, register_data.username, register_data.email)
             user = User(
                 username=register_data.username,
                 first_name=register_data.first_name,
