@@ -6,6 +6,9 @@ Test project is about **Quiz API**.
 
 To say it shortly, Users can create Quizzes, other users can play it and gain scores.
 
+# API Demonstration video
+![Video](https://toptal-test-bucket-mate.s3.eu-central-1.amazonaws.com/Screen+Recording+2022-10-10+at+23.23.37.mov)
+
 ## Technologies
 
 For RESTful application newly created Web Framework: [FastAPI](https://github.com/tiangolo/fastapi)
