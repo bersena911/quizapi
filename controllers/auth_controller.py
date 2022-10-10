@@ -104,6 +104,16 @@ class AuthController:
 
     @staticmethod
     def check_user_exists(session, username: str, email: str) -> bool:
+        """
+        checks if user already exists in db
+        Args:
+            session: session of sqlalchemy
+            username: username
+            email: email
+
+        Returns:
+
+        """
         if session.query(exists().where(User.email == email)).scalar():
             raise HTTPException(status_code=401, detail="Email already taken")
         if session.query(exists().where(User.username == username)).scalar():
