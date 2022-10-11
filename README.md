@@ -11,6 +11,8 @@ To say it shortly, Users can create Quizzes, other users can play it and gain sc
 
 ## Technologies
 
+Python version: **3.10.4**
+
 For RESTful application newly created Web Framework: [FastAPI](https://github.com/tiangolo/fastapi)
 by [Tiangolo](https://tiangolo.com/)
 
@@ -24,6 +26,20 @@ by [Pre-Commit](https://pre-commit.com/)
 To run PostgreSQL I am using docker containers locally.
 
 # Guide to run API
+
+## Create and Activate Virtual Environment
+
+> Python 3.10 is **REQUIRED** to run application
+
+Create virtualenv named venv
+```shell
+virtualenv venv --python=python3.10
+```
+
+Activate environment
+```shell
+source venv/bin/activate
+```
 
 ## Install Requirements
 

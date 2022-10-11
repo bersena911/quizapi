@@ -1,8 +1,9 @@
 import uuid
 
-from sqlalchemy import Column, ForeignKey, Boolean, Float
+from sqlalchemy import Column, ForeignKey, Boolean, Float, DateTime
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
 
 from services.db_service import Base
 
@@ -14,6 +15,8 @@ class GameQuestion(Base):
     answered = Column(Boolean)
     skipped = Column(Boolean)
     answer_score = Column(Float)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     question_id = Column(UUID(as_uuid=True), ForeignKey("questions.id"), index=True)
     game_id = Column(UUID(as_uuid=True), ForeignKey("games.id"))
     game_answers = relationship("GameAnswer", lazy=False)

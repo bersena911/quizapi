@@ -1,8 +1,9 @@
 import uuid
 
-from sqlalchemy import Column, String, Boolean
+from sqlalchemy import Column, String, Boolean, DateTime
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
 
 from services.db_service import Base
 
@@ -17,4 +18,5 @@ class User(Base):
     email = Column(String)
     password = Column(String)
     disabled = Column(Boolean)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
     quizzes = relationship("Quiz")
