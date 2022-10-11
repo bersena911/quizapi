@@ -45,7 +45,11 @@ source venv/bin/activate
 
 First, to run application we need to install all the requirements.
 
-Execute in Terminal
+You may need to update pip before running install.
+
+```shell
+pip install --upgrade pip
+```
 
 ```shell
 pip install -r requirements.txt

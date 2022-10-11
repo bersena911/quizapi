@@ -1,6 +1,5 @@
 fastapi[all]==0.82.0
 python-dotenv==0.21.0
-boto3==1.24.73
 psycopg2-binary==2.9.3
 alembic==1.8.1
 SQLAlchemy==1.4.41
