@@ -1,4 +1,5 @@
 from pydantic import BaseModel, UUID4, validator, root_validator
+from datetime import datetime
 
 
 class GameStartSchema(BaseModel):
@@ -13,6 +14,7 @@ class GameResponse(BaseModel):
     id: UUID4
     title: str
     finished: bool
+    created_at: datetime
 
 
 class QuestionStat(BaseModel):

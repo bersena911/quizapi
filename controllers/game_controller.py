@@ -33,7 +33,7 @@ class GameController:
         """
         with sessionmaker(bind=db_service.engine)() as session:
             query = (
-                session.query(Quiz.title, Game.id, Game.finished)
+                session.query(Quiz.title, Game.id, Game.finished, Game.created_at)
                 .join(Quiz.games)
                 .filter(Game.user_id == user_id)
             )

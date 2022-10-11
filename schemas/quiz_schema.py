@@ -1,4 +1,5 @@
 from pydantic import BaseModel, UUID4
+from datetime import datetime
 
 
 class QuizSchema(BaseModel):
@@ -19,6 +20,7 @@ class QuizResponse(BaseModel):
     id: UUID4
     title: str
     published: bool
+    created_at: datetime
 
 
 class UpdateQuizSchema(BaseModel):
