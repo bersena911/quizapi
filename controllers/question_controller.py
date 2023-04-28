@@ -1,6 +1,6 @@
 from fastapi import HTTPException
 from pydantic import UUID4
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session
 
 from controllers.quiz_controller import QuizController
 from models.answer_model import Answer
@@ -10,40 +10,39 @@ from schemas.question_schema import (
     QuestionTypeEnum,
     UpdateQuestionSchema,
 )
-from services.db_service import db_service
 
 
 class QuestionController:
     @staticmethod
-    def get_questions(quiz_id: UUID4, user_id: UUID4) -> dict:
+    def get_questions(session: Session, quiz_id: UUID4, user_id: UUID4) -> dict:
         """
         Retrieves questions from quiz
         Args:
+            session: db session
             quiz_id: quiz id
             user_id: authenticated user id
 
         Returns:
 
         """
-        with sessionmaker(bind=db_service.engine)() as session:
-            quiz = QuizController.get_quiz_for_user(session, quiz_id, user_id)
-            items = [
-                {
-                    "id": question.id,
-                    "title": question.title,
-                    "type": question.type,
-                    "answers": [answer.__dict__ for answer in question.answers],
-                }
-                for question in session.query(Question)
-                .filter(Question.quiz_id == quiz.id)
-                .all()
-            ]
-            return {
-                "total_count": len(items),
-                "limit": len(items),
-                "offset": 0,
-                "items": items,
+        quiz = QuizController.get_quiz_for_user(session, quiz_id, user_id)
+        items = [
+            {
+                "id": question.id,
+                "title": question.title,
+                "type": question.type,
+                "answers": [answer.__dict__ for answer in question.answers],
             }
+            for question in session.query(Question)
+            .filter(Question.quiz_id == quiz.id)
+            .all()
+        ]
+        return {
+            "total_count": len(items),
+            "limit": len(items),
+            "offset": 0,
+            "items": items,
+        }
 
     @staticmethod
     def get_question(session, question_id: UUID4) -> Question:
@@ -80,11 +79,16 @@ class QuestionController:
             )
 
     def add_questions(
-        self, quiz_id: UUID4, questions_data: QuestionsSchema, user_id: UUID4
+        self,
+        session: Session,
+        quiz_id: UUID4,
+        questions_data: QuestionsSchema,
+        user_id: UUID4,
     ) -> None:
         """
         Adds questions to already created unpublished quiz
         Args:
+            session: db session
             quiz_id: quiz id
             questions_data: questions data
             user_id: authenticated user id
@@ -92,37 +96,37 @@ class QuestionController:
         Returns:
 
         """
-        with sessionmaker(bind=db_service.engine)() as session:
-            quiz = QuizController.get_quiz_for_user(session, quiz_id, user_id)
-            if quiz.published:
-                raise HTTPException(
-                    status_code=400,
-                    detail="Can't add questions to already published quiz",
-                )
-            if len(questions_data.questions) + len(quiz.questions) > 10:
-                raise HTTPException(
-                    status_code=400,
-                    detail="Maximum number of questions per quiz is 10",
-                )
-            for question_data in questions_data.questions:
-                self.validate_answers(question_data.answers, question_data.type)
-                question = Question(
-                    title=question_data.title,
-                    type=question_data.type.value,
-                    quiz_id=quiz.id,
-                    answers=[
-                        Answer(value=answer.value, is_correct=answer.is_correct)
-                        for answer in question_data.answers
-                    ],
-                )
-                session.add(question)
-            session.commit()
+        quiz = QuizController.get_quiz_for_user(session, quiz_id, user_id)
+        if quiz.published:
+            raise HTTPException(
+                status_code=400,
+                detail="Can't add questions to already published quiz",
+            )
+        if len(questions_data.questions) + len(quiz.questions) > 10:
+            raise HTTPException(
+                status_code=400,
+                detail="Maximum number of questions per quiz is 10",
+            )
+        for question_data in questions_data.questions:
+            self.validate_answers(question_data.answers, question_data.type)
+            question = Question(
+                title=question_data.title,
+                type=question_data.type.value,
+                quiz_id=quiz.id,
+                answers=[
+                    Answer(value=answer.value, is_correct=answer.is_correct)
+                    for answer in question_data.answers
+                ],
+            )
+            session.add(question)
+        session.commit()
 
     @staticmethod
-    def paginate_questions(quiz_id: UUID4, offset: int) -> Question:
+    def paginate_questions(session: Session, quiz_id: UUID4, offset: int) -> Question:
         """
         Retrieves questions one by one
         Args:
+            session: db session
             quiz_id: quiz id
             offset: current progress in game
 
@@ -130,21 +134,21 @@ class QuestionController:
             sqlalchemy Questions object
 
         """
-        with sessionmaker(bind=db_service.engine)() as session:
-            return (
-                session.query(Question)
-                .filter(Question.quiz_id == quiz_id)
-                .limit(1)
-                .offset(offset)
-                .first()
-            )
+        return (
+            session.query(Question)
+            .filter(Question.quiz_id == quiz_id)
+            .limit(1)
+            .offset(offset)
+            .first()
+        )
 
     def delete_question(
-        self, quiz_id: UUID4, question_id: UUID4, user_id: UUID4
+        self, session: Session, quiz_id: UUID4, question_id: UUID4, user_id: UUID4
     ) -> None:
         """
         Deletes question from quiz if quiz is not published
         Args:
+            session: db session
             quiz_id: quiz id
             question_id: question id
             user_id: authenticated user id
@@ -152,18 +156,18 @@ class QuestionController:
         Returns:
 
         """
-        with sessionmaker(bind=db_service.engine)() as session:
-            quiz = QuizController.get_quiz_for_user(session, quiz_id, user_id)
-            if quiz.published:
-                raise HTTPException(
-                    status_code=400, detail="Can't delete question from published quiz"
-                )
-            question = self.get_question(session, question_id)
-            session.delete(question)
-            session.commit()
+        quiz = QuizController.get_quiz_for_user(session, quiz_id, user_id)
+        if quiz.published:
+            raise HTTPException(
+                status_code=400, detail="Can't delete question from published quiz"
+            )
+        question = self.get_question(session, question_id)
+        session.delete(question)
+        session.commit()
 
     def update_question(
         self,
+        session: Session,
         quiz_id: UUID4,
         question_id: UUID4,
         question_data: UpdateQuestionSchema,
@@ -172,6 +176,7 @@ class QuestionController:
         """
         Deletes question from quiz if quiz is not published
         Args:
+            session: db session
             quiz_id: quiz id
             question_id: question id
             question_data: Question Data
@@ -180,31 +185,30 @@ class QuestionController:
         Returns:
 
         """
-        with sessionmaker(bind=db_service.engine)() as session:
-            quiz = QuizController.get_quiz_for_user(session, quiz_id, user_id)
-            if quiz.published:
-                raise HTTPException(
-                    status_code=400, detail="Can't update question from published quiz"
-                )
-            question = self.get_question(session, question_id)
-            if question_data.type and question_data.answers:
-                self.validate_answers(question_data.answers, question_data.type)
-                question.answers = [
-                    Answer(value=answer.value, is_correct=answer.is_correct)
-                    for answer in question_data.answers
-                ]
-                question.type = question_data.type.value
-            elif question_data.type and question_data.type != question.type:
-                self.validate_answers(question.answers, question_data.type)
-                question.type = question_data.type.value
-            elif question_data.answers:
-                self.validate_answers(
-                    question_data.answers, QuestionTypeEnum[question.type]
-                )
-                question.answers = [
-                    Answer(value=answer.value, is_correct=answer.is_correct)
-                    for answer in question_data.answers
-                ]
-            if question_data.title:
-                question.title = question_data.title
-            session.commit()
+        quiz = QuizController.get_quiz_for_user(session, quiz_id, user_id)
+        if quiz.published:
+            raise HTTPException(
+                status_code=400, detail="Can't update question from published quiz"
+            )
+        question = self.get_question(session, question_id)
+        if question_data.type and question_data.answers:
+            self.validate_answers(question_data.answers, question_data.type)
+            question.answers = [
+                Answer(value=answer.value, is_correct=answer.is_correct)
+                for answer in question_data.answers
+            ]
+            question.type = question_data.type.value
+        elif question_data.type and question_data.type != question.type:
+            self.validate_answers(question.answers, question_data.type)
+            question.type = question_data.type.value
+        elif question_data.answers:
+            self.validate_answers(
+                question_data.answers, QuestionTypeEnum[question.type]
+            )
+            question.answers = [
+                Answer(value=answer.value, is_correct=answer.is_correct)
+                for answer in question_data.answers
+            ]
+        if question_data.title:
+            question.title = question_data.title
+        session.commit()

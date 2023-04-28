@@ -1,7 +1,7 @@
 from fastapi import HTTPException
 from pydantic import UUID4
 from sqlalchemy import update
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session
 
 from controllers.question_controller import QuestionController
 from controllers.quiz_controller import QuizController
@@ -14,15 +14,15 @@ from models.quiz_model import Quiz
 from schemas.game_answer_schema import GameAnswerSchema
 from schemas.game_schema import GameStartSchema
 from schemas.question_schema import QuestionTypeEnum
-from services.db_service import db_service
 
 
 class GameController:
     @staticmethod
-    def get_games(user_id: UUID4, limit: int, offset: int) -> dict:
+    def get_games(session: Session, user_id: UUID4, limit: int, offset: int) -> dict:
         """
         Lists all games for user
         Args:
+            session: db session,
             user_id: user_id for filtering
             limit: limit
             offset: offset
@@ -31,25 +31,27 @@ class GameController:
             list: games played by user
 
         """
-        with sessionmaker(bind=db_service.engine)() as session:
-            query = (
-                session.query(Quiz.title, Game.id, Game.finished, Game.created_at)
-                .join(Quiz.games)
-                .filter(Game.user_id == user_id)
-            )
-            games = query.limit(limit).offset(offset).all()
-            return {
-                "total_count": query.count(),
-                "limit": limit,
-                "offset": offset,
-                "items": games,
-            }
+        query = (
+            session.query(Quiz.title, Game.id, Game.finished, Game.created_at)
+            .join(Quiz.games)
+            .filter(Game.user_id == user_id)
+        )
+        games = query.limit(limit).offset(offset).all()
+        return {
+            "total_count": query.count(),
+            "limit": limit,
+            "offset": offset,
+            "items": games,
+        }
 
     @staticmethod
-    def start_game(game_body: GameStartSchema, user_id: UUID4) -> dict:
+    def start_game(
+        session: Session, game_body: GameStartSchema, user_id: UUID4
+    ) -> dict:
         """
         Creates empty game with default values
         Args:
+            session: db session
             game_body: payload containing quiz_id
             user_id: authenticated user id
 
@@ -57,35 +59,32 @@ class GameController:
             id of started game
 
         """
-        with sessionmaker(bind=db_service.engine)() as session:
-            quiz = QuizController.get_quiz(session, game_body.quiz_id)
-            if quiz.deleted or not quiz.published:
-                raise HTTPException(status_code=404, detail="Quiz not found")
-            game = (
-                session.query(Game)
-                .filter(Game.quiz_id == game_body.quiz_id)
-                .filter(Game.user_id == user_id)
-                .first()
+        quiz = QuizController.get_quiz(session, game_body.quiz_id)
+        if quiz.deleted or not quiz.published:
+            raise HTTPException(status_code=404, detail="Quiz not found")
+        game = (
+            session.query(Game)
+            .filter(Game.quiz_id == game_body.quiz_id)
+            .filter(Game.user_id == user_id)
+            .first()
+        )
+        if not game:
+            game = Game(
+                finished=False,
+                score=0,
+                offset=0,
+                quiz_id=game_body.quiz_id,
+                user_id=user_id,
             )
-            if not game:
-                game = Game(
-                    finished=False,
-                    score=0,
-                    offset=0,
-                    quiz_id=game_body.quiz_id,
-                    user_id=user_id,
-                )
-                session.add(game)
-                session.commit()
-                return {"id": game.id}
-            if game.finished:
-                raise HTTPException(
-                    status_code=400, detail="You already played this game"
-                )
+            session.add(game)
+            session.commit()
             return {"id": game.id}
+        if game.finished:
+            raise HTTPException(status_code=400, detail="You already played this game")
+        return {"id": game.id}
 
     @staticmethod
-    def get_game(session, game_id: UUID4, user_id: UUID4) -> Game:
+    def get_game(session: Session, game_id: UUID4, user_id: UUID4) -> Game:
         """
         Retrieves game by game id
         Args:
@@ -109,7 +108,9 @@ class GameController:
         return game
 
     @staticmethod
-    def get_game_question(session, game_id: UUID4, question_id: UUID4) -> GameQuestion:
+    def get_game_question(
+        session: Session, game_id: UUID4, question_id: UUID4
+    ) -> GameQuestion:
         """
         Retrieves info about answered question
         Args:
@@ -131,10 +132,11 @@ class GameController:
             raise HTTPException(status_code=400, detail="Question not found for game")
         return game_question
 
-    def next_question(self, game_id: UUID4, user_id: UUID4) -> dict:
+    def next_question(self, session: Session, game_id: UUID4, user_id: UUID4) -> dict:
         """
         Retrieves next question to answer from quiz, if not answered or skipped always returns same
         Args:
+            session: db session
             game_id: game id
             user_id: authenticated user id
 
@@ -142,39 +144,38 @@ class GameController:
             questions details if there is next questions, otherwise raises error
 
         """
-        with sessionmaker(bind=db_service.engine)() as session:
-            game = self.get_game(session, game_id, user_id)
-            if game.finished:
-                raise HTTPException(status_code=400, detail="Game is already finished")
-            question = QuestionController.paginate_questions(game.quiz_id, game.offset)
-            if not question:
-                session.execute(
-                    update(Game).where(Game.id == game.id).values(finished=True)
-                )
-                session.commit()
-                raise HTTPException(status_code=400, detail="Game is already finished")
-
-            game_question = (
-                session.query(GameQuestion)
-                .filter(GameQuestion.question_id == question.id)
-                .filter(GameQuestion.game_id == game_id)
-                .first()
+        game = self.get_game(session, game_id, user_id)
+        if game.finished:
+            raise HTTPException(status_code=400, detail="Game is already finished")
+        question = QuestionController.paginate_questions(game.quiz_id, game.offset)
+        if not question:
+            session.execute(
+                update(Game).where(Game.id == game.id).values(finished=True)
             )
-            if not game_question:
-                game_question = GameQuestion(
-                    answered=False,
-                    skipped=False,
-                    game_id=game_id,
-                    question_id=question.id,
-                )
-                session.add(game_question)
-                session.commit()
-            return {
-                "id": game_question.id,
-                "type": question.type,
-                "title": question.title,
-                "answers": [answer.__dict__ for answer in question.answers],
-            }
+            session.commit()
+            raise HTTPException(status_code=400, detail="Game is already finished")
+
+        game_question = (
+            session.query(GameQuestion)
+            .filter(GameQuestion.question_id == question.id)
+            .filter(GameQuestion.game_id == game_id)
+            .first()
+        )
+        if not game_question:
+            game_question = GameQuestion(
+                answered=False,
+                skipped=False,
+                game_id=game_id,
+                question_id=question.id,
+            )
+            session.add(game_question)
+            session.commit()
+        return {
+            "id": game_question.id,
+            "type": question.type,
+            "title": question.title,
+            "answers": [answer.__dict__ for answer in question.answers],
+        }
 
     @staticmethod
     def check_question_answered_or_skipped(game_question: GameQuestion) -> None:
@@ -244,6 +245,7 @@ class GameController:
 
     def answer_question(
         self,
+        session: Session,
         answer_data: GameAnswerSchema,
         game_id: UUID4,
         question_id: UUID4,
@@ -252,6 +254,7 @@ class GameController:
         """
         Saves info about answered question
         Args:
+            session: db session
             answer_data: user sent data
             game_id: game id
             question_id: question id
@@ -260,39 +263,37 @@ class GameController:
         Returns:
 
         """
-        with sessionmaker(bind=db_service.engine)() as session:
-            game = self.get_game(session, game_id, user_id)
-            game_question = self.get_game_question(session, game_id, question_id)
-            self.check_question_answered_or_skipped(game_question)
-            question = QuestionController.get_question(
-                session, game_question.question_id
-            )
-            if question.type == QuestionTypeEnum.SINGLE_ANSWER.value:
-                if len(answer_data.choices) > 1:
-                    raise HTTPException(
-                        status_code=400,
-                        detail=f"{question.type} does not support multiple answers",
-                    )
-            score = self.calculate_answer_score(
-                answer_data.choices, question.answers, question.type
-            )
-            session.execute(
-                update(Game)
-                .where(Game.id == game.id)
-                .values(score=game.score + score, offset=game.offset + 1)
-            )
-            game_question.answer_score = score
-            game_question.answered = True
-            for choice in answer_data.choices:
-                session.add(
-                    GameAnswer(choice=choice, game_question_id=game_question.id)
+        game = self.get_game(session, game_id, user_id)
+        game_question = self.get_game_question(session, game_id, question_id)
+        self.check_question_answered_or_skipped(game_question)
+        question = QuestionController.get_question(session, game_question.question_id)
+        if question.type == QuestionTypeEnum.SINGLE_ANSWER.value:
+            if len(answer_data.choices) > 1:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"{question.type} does not support multiple answers",
                 )
-            session.commit()
+        score = self.calculate_answer_score(
+            answer_data.choices, question.answers, question.type
+        )
+        session.execute(
+            update(Game)
+            .where(Game.id == game.id)
+            .values(score=game.score + score, offset=game.offset + 1)
+        )
+        game_question.answer_score = score
+        game_question.answered = True
+        for choice in answer_data.choices:
+            session.add(GameAnswer(choice=choice, game_question_id=game_question.id))
+        session.commit()
 
-    def skip_question(self, game_id: UUID4, question_id: UUID4, user_id: UUID4) -> None:
+    def skip_question(
+        self, session: Session, game_id: UUID4, question_id: UUID4, user_id: UUID4
+    ) -> None:
         """
         Skips question without modifying anything
         Args:
+            session: db session
             game_id: game id
             question_id: question id
             user_id: authenticated user id
@@ -300,41 +301,40 @@ class GameController:
         Returns:
 
         """
-        with sessionmaker(bind=db_service.engine)() as session:
-            game = self.get_game(session, game_id, user_id)
-            game_question = self.get_game_question(session, game_id, question_id)
-            self.check_question_answered_or_skipped(game_question)
-            game_question.answer_score = 0
-            game_question.skipped = True
-            session.execute(
-                update(Game).where(Game.id == game.id).values(offset=game.offset + 1)
-            )
-            session.commit()
+        game = self.get_game(session, game_id, user_id)
+        game_question = self.get_game_question(session, game_id, question_id)
+        self.check_question_answered_or_skipped(game_question)
+        game_question.answer_score = 0
+        game_question.skipped = True
+        session.execute(
+            update(Game).where(Game.id == game.id).values(offset=game.offset + 1)
+        )
+        session.commit()
 
-    def get_results(self, game_id: UUID4, user_id: UUID4) -> dict:
+    def get_results(self, session: Session, game_id: UUID4, user_id: UUID4) -> dict:
         """
         Retrieves final results of the finished game
         Args:
+            session: db session
             game_id: game id
             user_id: authenticated user id
 
         Returns:
 
         """
-        with sessionmaker(bind=db_service.engine)() as session:
-            game = self.get_game(session, game_id, user_id)
-            if not game.finished:
-                raise HTTPException(status_code=400, detail="Game is not finished yet")
-            question_stats = (
-                session.query(GameQuestion.answer_score, Question.title)
-                .join(Question, Question.id == GameQuestion.question_id)
-                .filter(GameQuestion.game_id == game_id)
-                .all()
-            )
-            max_score = len(question_stats)
-            score_percentage = game.score / max_score * 100
-            return {
-                "score": game.score,
-                "score_percentage": score_percentage,
-                "question_stats": question_stats,
-            }
+        game = self.get_game(session, game_id, user_id)
+        if not game.finished:
+            raise HTTPException(status_code=400, detail="Game is not finished yet")
+        question_stats = (
+            session.query(GameQuestion.answer_score, Question.title)
+            .join(Question, Question.id == GameQuestion.question_id)
+            .filter(GameQuestion.game_id == game_id)
+            .all()
+        )
+        max_score = len(question_stats)
+        score_percentage = game.score / max_score * 100
+        return {
+            "score": game.score,
+            "score_percentage": score_percentage,
+            "question_stats": question_stats,
+        }

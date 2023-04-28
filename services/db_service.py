@@ -1,5 +1,5 @@
 from sqlalchemy import create_engine
-from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import declarative_base, sessionmaker
 
 from settings import app_config
 
@@ -26,3 +26,13 @@ class DBService:
 
 
 db_service = DBService()
+db_service.create_engine()
+
+
+# Dependency
+def get_session():
+    session = sessionmaker(autocommit=False, autoflush=False, bind=db_service.engine)()
+    try:
+        yield session
+    finally:
+        session.close()

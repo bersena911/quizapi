@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from helpers.app_helper import startup_event, shutdown_event
+from helpers.app_helper import shutdown_event
 from routers import (
     health_router,
     auth_router,
@@ -26,7 +26,6 @@ def create_app():
         title="QuizAPI",
         description="Quiz API",
         version="1.0.0",
-        on_startup=[startup_event],
         on_shutdown=[shutdown_event],
     )
     init_routers(app_)
